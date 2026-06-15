@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JD-Sync Guide</title>
+    <link rel="stylesheet" href="guide.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">JD-Sync</p>
+          <h1>자소설 즐겨찾기를 Notion Calendar로 보내기</h1>
+          <p class="description">
+            Notion에 채용 일정 페이지와 데이터베이스를 만들고, 그 데이터베이스를 Notion Calendar에 연결한 뒤,
+            자소설 즐겨찾기를 일정으로 동기화하는 순서를 안내합니다.
+          </p>
+        </div>
+        <aside class="status-card" aria-label="설정 상태">
+          <strong>설정 상태</strong>
+          <ul id="setupChecklist"></ul>
+        </aside>
+      </header>
+
+      <section class="layout">
+        <article class="panel guide-panel">
+          <h2>전체 흐름</h2>
+          <ol class="flow-list">
+            <li>Notion에 `채용 일정` 같은 일반 페이지를 만듭니다.</li>
+            <li>그 페이지 안에 날짜 속성이 있는 채용 공고 데이터베이스를 만듭니다.</li>
+            <li>그 데이터베이스를 Notion Calendar에 추가합니다.</li>
+            <li>자소설 공고를 즐겨찾기하면 JD-Sync가 데이터베이스에 새 공고 항목을 만듭니다.</li>
+            <li>Notion Calendar는 그 데이터베이스 항목의 `마감일`을 캘린더에 보여줍니다.</li>
+          </ol>
+
+          <h2>1. Notion 토큰 발급</h2>
+          <ol class="steps">
+            <li>
+              <a href="https://www.notion.so/profile/integrations" target="_blank" rel="noreferrer">Notion Integrations</a>
+              페이지를 열고 새 internal integration을 만듭니다.
+            </li>
+            <li>연결할 Notion 워크스페이스를 선택하고 저장합니다.</li>
+            <li>Capabilities에서 content 읽기/삽입/수정 권한을 켭니다.</li>
+            <li>Secrets 또는 Configuration 화면에서 internal integration token을 복사합니다.</li>
+          </ol>
+
+          <h2>2. Notion 페이지와 DB 만들기</h2>
+          <p class="hint">
+            Notion Calendar에 토큰만 넣어서 외부 일정이 바로 등록되는 방식은 아닙니다. 날짜 속성이 있는 Notion DB를 Calendar에 연결하면,
+            그 DB 안의 페이지들이 일정처럼 보입니다. JD-Sync는 자소설 공고를 이 DB 안의 새 항목으로 자동 추가합니다.
+          </p>
+          <ol class="steps">
+            <li>Notion에서 `채용 일정` 같은 일반 페이지를 하나 만듭니다.</li>
+            <li>그 페이지 안에 `채용 공고` 같은 데이터베이스를 하나 만듭니다. 공고마다 별도 페이지를 미리 만들 필요는 없습니다.</li>
+            <li>최소한 제목 속성과 날짜 속성을 준비합니다. 기본값은 `이름`과 `마감일`입니다.</li>
+            <li>DB 우측 상단 메뉴에서 방금 만든 integration을 connection으로 추가합니다.</li>
+            <li>DB URL에서 database ID를 복사해 아래 Notion Database ID에 붙여넣습니다.</li>
+          </ol>
+
+          <h2>3. Notion Calendar에 보이게 하기</h2>
+          <ol class="steps">
+            <li>Notion Calendar를 열고 왼쪽 사이드바의 Notion 워크스페이스를 찾습니다.</li>
+            <li>워크스페이스 메뉴에서 Notion database 추가를 선택합니다.</li>
+            <li>방금 만든 채용 공고 DB를 선택하고 날짜 속성으로 `마감일`을 고릅니다.</li>
+          </ol>
+
+          <div class="note">
+            즐겨찾기하면 JD-Sync가 설정한 Notion DB에 공고 항목을 만들고, Notion Calendar는 그 DB에 연결된 날짜 속성을 읽어 캘린더에 표시합니다.
+          </div>
+        </article>
+
+        <form id="settingsForm" class="panel settings-panel">
+          <h2>설정 입력</h2>
+          <label>
+            Notion Internal Integration Token
+            <input id="notionToken" type="password" autocomplete="off" placeholder="ntn_... 또는 secret_..." />
+          </label>
+
+          <div class="grid">
+            <label>
+              Notion 대상 타입
+              <select id="notionParentType">
+                <option value="database_id">database_id</option>
+                <option value="data_source_id">data_source_id</option>
+              </select>
+            </label>
+            <label>
+              Notion-Version
+              <input id="notionVersion" type="text" placeholder="2022-06-28" />
+            </label>
+          </div>
+
+          <label>
+            Notion Database ID
+            <input id="notionParentId" type="text" placeholder="Notion database ID 또는 data source ID" />
+          </label>
+          <p class="hint">
+            여기는 DB를 담은 일반 페이지 ID가 아니라, 데이터베이스 URL에서 복사한 database ID를 넣는 곳입니다. `data_source_id`는 Notion의 최신 API를 직접 쓰는 경우에만 사용하세요.
+          </p>
+
+          <h3>DB 속성명</h3>
+          <p class="hint">Notion DB의 실제 속성명과 같아야 합니다. 비워 둔 선택 속성은 보내지 않습니다.</p>
+
+          <div class="grid">
+            <label>제목 속성<input id="titleProperty" type="text" /></label>
+            <label>날짜 속성<input id="dateProperty" type="text" /></label>
+            <label>회사<input id="companyProperty" type="text" /></label>
+            <label>공고명<input id="recruitTitleProperty" type="text" /></label>
+            <label>공고 URL<input id="urlProperty" type="text" /></label>
+            <label>지원 URL<input id="applyUrlProperty" type="text" /></label>
+            <label>시작일<input id="startDateProperty" type="text" /></label>
+            <label>자소설 ID<input id="sourceIdProperty" type="text" /></label>
+            <label>직무<input id="dutiesProperty" type="text" /></label>
+          </div>
+
+          <h3>동기화 옵션</h3>
+          <label class="checkbox">
+            <input id="autoSync" type="checkbox" />
+            즐겨찾기 시 자동 동기화
+          </label>
+          <label class="checkbox">
+            <input id="preventDuplicates" type="checkbox" />
+            이미 동기화한 자소설 ID는 다시 만들지 않기
+          </label>
+          <label class="checkbox">
+            <input id="enableNotifications" type="checkbox" />
+            성공 알림 표시
+          </label>
+
+          <div class="actions">
+            <button id="saveButton" type="submit">설정 저장</button>
+            <button id="resetButton" type="button" class="secondary">기본값 복원</button>
+          </div>
+          <p id="settingsStatus" class="status-message" role="status"></p>
+        </form>
+      </section>
+
+      <section class="panel run-panel">
+        <div>
+          <h2>동작시키기</h2>
+          <p class="hint">
+            자소설 공고 상세 페이지에서 확장 아이콘을 누르면 이 가이드가 열리고, 아래 버튼으로 방금 선택한 공고를 수동 동기화할 수 있습니다.
+            자동 동기화가 켜져 있으면 즐겨찾기 성공 시 설정한 Notion DB에 공고 항목이 생기고, 그 DB를 Notion Calendar에 연결해 둔 경우 캘린더에도 보입니다.
+          </p>
+          <p id="sourceTabLabel" class="source-tab"></p>
+        </div>
+        <div class="run-actions">
+          <button id="syncSourceButton" type="button">직전 자소설 탭 수동 동기화</button>
+          <a class="button-link secondary" href="https://jasoseol.com/recruit" target="_blank" rel="noreferrer">자소설 채용공고 열기</a>
+        </div>
+      </section>
+
+      <section class="panel logs-panel">
+        <div class="logs-header">
+          <h2>최근 동기화 기록</h2>
+          <button id="clearLogsButton" type="button" class="secondary small">기록 지우기</button>
+        </div>
+        <ol id="logList"></ol>
+      </section>
+    </main>
+
+    <script src="guide.js"></script>
+  </body>
+</html>

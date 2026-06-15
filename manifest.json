@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Jasoseol to Notion Calendar",
+  "description": "자소설닷컴에서 즐겨찾기한 채용 공고를 Notion Calendar용 Notion DB에 자동으로 추가합니다.",
+  "version": "0.1.0",
+  "permissions": ["activeTab", "notifications", "storage"],
+  "host_permissions": [
+    "https://jasoseol.com/*",
+    "https://www.jasoseol.com/*",
+    "https://api.notion.com/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    },
+    "default_popup": "src/popup.html",
+    "default_title": "Jasoseol to Notion"
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jasoseol.com/*", "https://www.jasoseol.com/*"],
+      "js": ["src/page-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://jasoseol.com/*", "https://www.jasoseol.com/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "src/guide.html"
+}

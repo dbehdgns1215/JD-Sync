@@ -153,11 +153,67 @@ a {
   font-weight: 700;
 }
 
+code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .92em;
+}
+
 .note {
   padding: 12px 14px;
   border-radius: 8px;
   background: #fff7ed;
   color: #9a3412;
+}
+
+.quick-start,
+.property-example {
+  margin-bottom: 18px;
+  padding: 13px 14px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #065f46;
+  line-height: 1.55;
+}
+
+.quick-start strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.quick-start ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.quick-start p,
+.property-example {
+  font-size: 13px;
+}
+
+.quick-start p {
+  margin-bottom: 0;
+}
+
+.advanced-settings {
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.advanced-settings summary {
+  color: #334155;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.advanced-settings .grid {
+  margin-top: 12px;
 }
 
 label {

@@ -27,11 +27,11 @@
         <article class="panel guide-panel">
           <h2>전체 흐름</h2>
           <ol class="flow-list">
-            <li>Notion에 `채용 일정` 같은 일반 페이지를 만듭니다.</li>
-            <li>그 페이지 안에 날짜 속성이 있는 채용 공고 데이터베이스를 만듭니다.</li>
+            <li>Notion에 <code>채용 공고</code> 데이터베이스를 하나 만듭니다.</li>
+            <li>처음에는 DB에 <code>이름</code> 칸과 <code>일정일</code> 칸만 있어도 됩니다.</li>
             <li>그 데이터베이스를 Notion Calendar에 추가합니다.</li>
-            <li>자소설 공고를 즐겨찾기하면 JD-Sync가 데이터베이스에 새 공고 항목을 만듭니다.</li>
-            <li>Notion Calendar는 그 데이터베이스 항목의 `마감일`을 캘린더에 보여줍니다.</li>
+            <li>자소설 공고를 즐겨찾기하면 JD-Sync가 DB에 새 줄을 만듭니다.</li>
+            <li>Notion Calendar는 그 새 줄의 <code>일정일</code>을 캘린더에 보여줍니다.</li>
           </ol>
 
           <h2>1. Notion 토큰 발급</h2>
@@ -45,73 +45,102 @@
             <li>Secrets 또는 Configuration 화면에서 internal integration token을 복사합니다.</li>
           </ol>
 
-          <h2>2. Notion 페이지와 DB 만들기</h2>
+          <h2>2. Notion DB 만들기</h2>
           <p class="hint">
             Notion Calendar에 토큰만 넣어서 외부 일정이 바로 등록되는 방식은 아닙니다. 날짜 속성이 있는 Notion DB를 Calendar에 연결하면,
-            그 DB 안의 페이지들이 일정처럼 보입니다. JD-Sync는 자소설 공고를 이 DB 안의 새 항목으로 자동 추가합니다.
+            그 DB 안의 각 줄이 일정처럼 보입니다. JD-Sync는 자소설 공고를 이 DB 안의 새 줄로 자동 추가합니다.
           </p>
           <ol class="steps">
-            <li>Notion에서 `채용 일정` 같은 일반 페이지를 하나 만듭니다.</li>
-            <li>그 페이지 안에 `채용 공고` 같은 데이터베이스를 하나 만듭니다. 공고마다 별도 페이지를 미리 만들 필요는 없습니다.</li>
-            <li>최소한 제목 속성과 날짜 속성을 준비합니다. 기본값은 `이름`과 `마감일`입니다.</li>
+            <li>Notion에서 <code>채용 공고</code> 같은 데이터베이스를 하나 만듭니다. 일반 페이지 안에 만들어도 되고, 데이터베이스를 풀페이지로 만들어도 됩니다.</li>
+            <li>처음에는 <code>이름</code> 칸과 <code>일정일</code> 칸만 있으면 됩니다.</li>
+            <li><code>이름</code> 칸은 Title 타입, <code>일정일</code> 칸은 Date 타입이어야 합니다.</li>
             <li>DB 우측 상단 메뉴에서 방금 만든 integration을 connection으로 추가합니다.</li>
-            <li>DB URL에서 database ID를 복사해 아래 Notion Database ID에 붙여넣습니다.</li>
+            <li>DB 설정에서 data source ID를 복사해 아래 Notion Data Source ID에 붙여넣습니다.</li>
           </ol>
 
           <h2>3. Notion Calendar에 보이게 하기</h2>
           <ol class="steps">
             <li>Notion Calendar를 열고 왼쪽 사이드바의 Notion 워크스페이스를 찾습니다.</li>
             <li>워크스페이스 메뉴에서 Notion database 추가를 선택합니다.</li>
-            <li>방금 만든 채용 공고 DB를 선택하고 날짜 속성으로 `마감일`을 고릅니다.</li>
+            <li>방금 만든 채용 공고 DB를 선택하고 날짜 칸으로 <code>일정일</code>을 고릅니다.</li>
           </ol>
 
           <div class="note">
-            즐겨찾기하면 JD-Sync가 설정한 Notion DB에 공고 항목을 만들고, Notion Calendar는 그 DB에 연결된 날짜 속성을 읽어 캘린더에 표시합니다.
+            쉽게 말하면 JD-Sync는 Notion DB에 새 줄을 추가하는 역할입니다. Calendar는 그 DB의 <code>일정일</code> 칸을 보고 일정을 보여줍니다.
           </div>
         </article>
 
         <form id="settingsForm" class="panel settings-panel">
           <h2>설정 입력</h2>
-          <label>
-            Notion Internal Integration Token
-            <input id="notionToken" type="password" autocomplete="off" placeholder="ntn_... 또는 secret_..." />
-          </label>
-
-          <div class="grid">
-            <label>
-              Notion 대상 타입
-              <select id="notionParentType">
-                <option value="database_id">database_id</option>
-                <option value="data_source_id">data_source_id</option>
-              </select>
-            </label>
-            <label>
-              Notion-Version
-              <input id="notionVersion" type="text" placeholder="2022-06-28" />
-            </label>
+          <div class="quick-start">
+            <strong>처음이면 이것만 입력하세요.</strong>
+            <ul>
+              <li>Notion 토큰</li>
+              <li>Notion Data Source ID</li>
+              <li>제목 칸 이름: <code>이름</code> 또는 <code>액티비티</code></li>
+              <li>날짜 칸 이름: <code>일정일</code> 또는 <code>날짜</code></li>
+            </ul>
+            <p>회사, URL 같은 추가 칸은 Notion DB에 직접 만든 경우에만 입력하면 됩니다.</p>
           </div>
 
           <label>
-            Notion Database ID
-            <input id="notionParentId" type="text" placeholder="Notion database ID 또는 data source ID" />
+            Notion 토큰
+            <input id="notionToken" type="password" autocomplete="off" placeholder="ntn_... 또는 secret_..." />
+          </label>
+
+          <label>
+            Notion Data Source ID
+            <input id="notionParentId" type="text" placeholder="DB 설정에서 복사한 data source ID" />
           </label>
           <p class="hint">
-            여기는 DB를 담은 일반 페이지 ID가 아니라, 데이터베이스 URL에서 복사한 database ID를 넣는 곳입니다. `data_source_id`는 Notion의 최신 API를 직접 쓰는 경우에만 사용하세요.
+            새 Notion API에서는 database ID가 아니라 data source ID를 쓰는 게 가장 안전합니다. 이미 data source ID로 동기화가 됐다면 이 값이 맞습니다.
           </p>
 
-          <h3>DB 속성명</h3>
-          <p class="hint">Notion DB의 실제 속성명과 같아야 합니다. 비워 둔 선택 속성은 보내지 않습니다.</p>
+          <details class="advanced-settings">
+            <summary>고급 설정</summary>
+            <div class="grid">
+              <label>
+                저장 위치 방식
+                <select id="notionParentType">
+                  <option value="data_source_id">data_source_id</option>
+                  <option value="database_id">database_id</option>
+                </select>
+              </label>
+              <label>
+                Notion API 버전
+                <input id="notionVersion" type="text" placeholder="2025-09-03" />
+              </label>
+            </div>
+            <p class="hint">대부분의 사용자는 <code>data_source_id</code>와 <code>2025-09-03</code>을 그대로 쓰면 됩니다.</p>
+          </details>
 
+          <h3>Notion DB 칸 이름</h3>
+          <p class="hint">
+            여기에는 Notion 데이터베이스에 실제로 만들어 둔 칸 이름을 적습니다. JD-Sync가 새 공고 줄을 만들 때
+            <code>공고 제목은 어느 칸에 넣을지</code>, <code>날짜는 어느 칸에 넣을지</code>를 알려주는 설정입니다.
+          </p>
+          <div class="property-example">
+            직접 만든 템플릿 DB라면 <code>이름</code> / <code>일정일</code>을 쓰면 됩니다. Notion Calendar 기본 DB를 쓰고 있다면
+            <code>액티비티</code> / <code>날짜</code>로 바꾸세요.
+          </div>
           <div class="grid">
-            <label>제목 속성<input id="titleProperty" type="text" /></label>
-            <label>날짜 속성<input id="dateProperty" type="text" /></label>
-            <label>회사<input id="companyProperty" type="text" /></label>
-            <label>공고명<input id="recruitTitleProperty" type="text" /></label>
-            <label>공고 URL<input id="urlProperty" type="text" /></label>
-            <label>지원 URL<input id="applyUrlProperty" type="text" /></label>
-            <label>시작일<input id="startDateProperty" type="text" /></label>
-            <label>자소설 ID<input id="sourceIdProperty" type="text" /></label>
-            <label>직무<input id="dutiesProperty" type="text" /></label>
+            <label>공고 제목을 넣을 칸<input id="titleProperty" type="text" placeholder="이름" /></label>
+            <label>날짜를 넣을 칸<input id="dateProperty" type="text" placeholder="일정일" /></label>
+          </div>
+
+          <h3>선택 정보 칸</h3>
+          <p class="hint">
+            Notion DB에 아래 칸을 직접 만들었을 때만 입력하세요. 비워두면 JD-Sync가 그 정보는 DB 칸에 따로 넣지 않습니다.
+            그래도 공고 본문에는 회사명과 링크를 같이 적어둡니다.
+          </p>
+          <div class="grid">
+            <label>회사명을 넣을 칸<input id="companyProperty" type="text" placeholder="예: 회사" /></label>
+            <label>공고명을 따로 넣을 칸<input id="recruitTitleProperty" type="text" placeholder="예: 공고명" /></label>
+            <label>공고 링크를 넣을 칸<input id="urlProperty" type="text" placeholder="예: 공고 URL" /></label>
+            <label>지원 링크를 넣을 칸<input id="applyUrlProperty" type="text" placeholder="예: 지원 URL" /></label>
+            <label>시작일을 넣을 칸<input id="startDateProperty" type="text" placeholder="예: 시작일" /></label>
+            <label>자소설 ID를 넣을 칸<input id="sourceIdProperty" type="text" placeholder="예: 자소설 ID" /></label>
+            <label>직무를 넣을 칸<input id="dutiesProperty" type="text" placeholder="예: 직무" /></label>
           </div>
 
           <h3>동기화 옵션</h3>
@@ -141,7 +170,7 @@
           <h2>동작시키기</h2>
           <p class="hint">
             자소설 공고 상세 페이지에서 확장 아이콘을 누르면 이 가이드가 열리고, 아래 버튼으로 방금 선택한 공고를 수동 동기화할 수 있습니다.
-            자동 동기화가 켜져 있으면 즐겨찾기 성공 시 설정한 Notion DB에 공고 항목이 생기고, 그 DB를 Notion Calendar에 연결해 둔 경우 캘린더에도 보입니다.
+            자동 동기화가 켜져 있으면 즐겨찾기 성공 시 설정한 Notion DB에 새 줄이 생기고, 그 DB를 Notion Calendar에 연결해 둔 경우 캘린더에도 보입니다.
           </p>
           <p id="sourceTabLabel" class="source-tab"></p>
         </div>

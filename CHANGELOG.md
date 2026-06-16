@@ -14,3 +14,10 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0
 - Duplicate prevention using synced Jasoseol posting IDs.
 - Privacy, security, contribution, and store-publishing documentation.
 - Korean-first policy documentation with English companion files.
+- Plain-language setup guide for Notion database columns and optional fields.
+
+### Changed
+
+- Notion synchronization now defaults to `data_source_id` with the `2025-09-03` API version.
+- Optional Notion database column mappings are blank by default so a minimal database only needs `이름` and `일정일`.
+- Resetting defaults keeps the saved Notion token and data source ID while clearing optional column mappings.

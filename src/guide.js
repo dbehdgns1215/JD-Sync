@@ -2,18 +2,18 @@ const DEFAULT_SETTINGS = {
   autoSync: true,
   preventDuplicates: true,
   enableNotifications: true,
-  notionParentType: "database_id",
+  notionParentType: "data_source_id",
   notionParentId: "",
-  notionVersion: "2022-06-28",
+  notionVersion: "2025-09-03",
   titleProperty: "이름",
-  dateProperty: "마감일",
-  companyProperty: "회사",
-  recruitTitleProperty: "공고명",
-  urlProperty: "공고 URL",
-  applyUrlProperty: "지원 URL",
-  startDateProperty: "시작일",
-  sourceIdProperty: "자소설 ID",
-  dutiesProperty: "직무"
+  dateProperty: "일정일",
+  companyProperty: "",
+  recruitTitleProperty: "",
+  urlProperty: "",
+  applyUrlProperty: "",
+  startDateProperty: "",
+  sourceIdProperty: "",
+  dutiesProperty: ""
 };
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
@@ -66,17 +66,17 @@ function renderChecklist(settings) {
   checklist.textContent = "";
 
   const items = [
-    ["Notion token", Boolean(settings.notionToken)],
-    ["Parent ID", Boolean(settings.notionParentId)],
-    ["Title property", Boolean(settings.titleProperty)],
-    ["Date property", Boolean(settings.dateProperty)],
-    ["Auto sync", Boolean(settings.autoSync)]
+    ["Notion 토큰", Boolean(settings.notionToken)],
+    ["Notion DB ID", Boolean(settings.notionParentId)],
+    ["제목 칸 이름", Boolean(settings.titleProperty)],
+    ["날짜 칸 이름", Boolean(settings.dateProperty)],
+    ["자동 동기화", Boolean(settings.autoSync)]
   ];
 
   for (const [label, ready] of items) {
     const item = document.createElement("li");
     item.className = ready ? "ready" : "";
-    item.textContent = ready ? `${label} ready` : `${label} needed`;
+    item.textContent = ready ? `${label} 완료` : `${label} 필요`;
     checklist.appendChild(item);
   }
 }
@@ -139,7 +139,7 @@ async function resetDefaults() {
     return;
   }
 
-  setStatus("기본값으로 복원했어요. 토큰은 유지됩니다.");
+  setStatus("기본값으로 복원했어요. 토큰과 Notion Data Source ID는 유지됩니다.");
   await loadGuideState();
 }
 

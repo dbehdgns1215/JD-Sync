@@ -32,16 +32,21 @@ Recruiting calendars are useful only when they stay current. JD-Sync keeps bookm
 
 Notion Calendar does not provide a token-only flow where an external app directly inserts calendar events. Instead, Notion Calendar can display pages from a Notion database that has a date property.
 
-You should first create a regular Notion page, create a recruiting-postings database inside it, and add that database to Notion Calendar. After that, when you bookmark a Jasoseol posting, JD-Sync creates a new item in that database and Notion Calendar displays the item's deadline date.
+You should first create a Notion database for recruiting schedules and add that database to Notion Calendar. After that, when you bookmark a Jasoseol posting, JD-Sync creates a new row in that database and Notion Calendar displays the row's schedule date.
 
-## Recommended Notion Database
+## Notion Database Columns
 
-Create a database with these properties:
+You only need these two columns to start:
 
 | Property | Type | Required |
 | --- | --- | --- |
 | `Name` or `이름` | Title | Yes |
-| `Deadline` or `마감일` | Date | Yes |
+| `Schedule Date` or `일정일` | Date | Yes |
+
+These columns are optional. Enter their names in JD-Sync only if you created matching columns in your Notion database. Leave the matching JD-Sync setting blank if you did not create the column.
+
+| Property | Type | Required |
+| --- | --- | --- |
 | `Company` or `회사` | Text | No |
 | `Posting` or `공고명` | Text | No |
 | `Posting URL` or `공고 URL` | URL | No |
@@ -50,7 +55,7 @@ Create a database with these properties:
 | `Jasoseol ID` or `자소설 ID` | Number | No |
 | `Duties` or `직무` | Text | No |
 
-The default settings use Korean property names because Jasoseol is a Korean recruiting service. You can change every property name from the extension guide page.
+In this context, a property is simply a Notion database column. JD-Sync needs these names so it knows which column should receive the title, schedule date, URL, and other posting data. If you use Notion Calendar's default database, enter `액티비티` for the title column and `날짜` for the date column.
 
 ## Local Installation
 
@@ -68,19 +73,17 @@ The default settings use Korean property names because Jasoseol is a Korean recr
 
 1. Create a Notion internal integration from the Notion developer portal.
 2. Copy the integration token.
-3. Create a regular Notion page, such as `Recruiting Calendar`.
-4. Create a database inside that page, such as `Job Postings`.
-5. Add at least a title property and a date property. The Korean defaults are `이름` and `마감일`.
+3. Create a Notion database, such as `Job Postings`. It can be inside a regular page or opened as a full-page database.
+4. Add at least a title column and a date column. The Korean defaults are `이름` and `일정일`.
+5. Add company, posting URL, and other columns only if you want them as separate database columns.
 6. Use the database menu to add the integration as a connection.
-7. Copy the database ID from the Notion URL. This is the database ID, not the regular page ID.
+7. Copy the data source ID from the database settings. This is the safest option for Notion's newer API.
 8. Add this database to Notion Calendar and select the deadline date property.
-9. When you bookmark a Jasoseol posting, JD-Sync creates a database item and Notion Calendar displays it.
+9. When you bookmark a Jasoseol posting, JD-Sync creates a database row and Notion Calendar displays it.
 10. In JD-Sync settings, use:
-   - Parent type: `database_id`
-   - Notion-Version: `2022-06-28`
-   - Parent ID: your Notion database ID
-
-If you already use Notion's newer data source API, you can use `data_source_id` with `2025-09-03`.
+   - Notion target type: `data_source_id`
+   - Notion API version: `2025-09-03`
+   - Notion Data Source ID: the ID copied from the database settings
 
 ## Development
 

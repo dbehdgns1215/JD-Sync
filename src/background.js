@@ -2,18 +2,18 @@ const DEFAULT_SETTINGS = {
   autoSync: true,
   preventDuplicates: true,
   enableNotifications: true,
-  notionParentType: "database_id",
+  notionParentType: "data_source_id",
   notionParentId: "",
-  notionVersion: "2022-06-28",
+  notionVersion: "2025-09-03",
   titleProperty: "이름",
-  dateProperty: "마감일",
-  companyProperty: "회사",
-  recruitTitleProperty: "공고명",
-  urlProperty: "공고 URL",
-  applyUrlProperty: "지원 URL",
-  startDateProperty: "시작일",
-  sourceIdProperty: "자소설 ID",
-  dutiesProperty: "직무"
+  dateProperty: "일정일",
+  companyProperty: "",
+  recruitTitleProperty: "",
+  urlProperty: "",
+  applyUrlProperty: "",
+  startDateProperty: "",
+  sourceIdProperty: "",
+  dutiesProperty: ""
 };
 
 const GUIDE_PATH = "src/guide.html";
@@ -170,7 +170,16 @@ async function saveSettings(incomingSettings) {
 }
 
 async function resetSettings(preserveToken) {
-  await chrome.storage.sync.set(DEFAULT_SETTINGS);
+  const currentSettings = await getSettings();
+  const nextSettings = { ...DEFAULT_SETTINGS };
+
+  if (preserveToken) {
+    nextSettings.notionParentId = currentSettings.notionParentId || "";
+    nextSettings.notionParentType = currentSettings.notionParentType || DEFAULT_SETTINGS.notionParentType;
+    nextSettings.notionVersion = currentSettings.notionVersion || defaultNotionVersion(nextSettings.notionParentType);
+  }
+
+  await chrome.storage.sync.set(nextSettings);
   if (!preserveToken) {
     await chrome.storage.local.set({ notionToken: "" });
   }
@@ -254,9 +263,9 @@ async function getSyncedRecruitIds() {
 
 function validateSettings(settings) {
   if (!settings.notionToken) throw new Error("Notion API 토큰이 설정되지 않았어요.");
-  if (!settings.notionParentId) throw new Error("Notion parent ID가 설정되지 않았어요.");
-  if (!settings.titleProperty) throw new Error("Notion 제목 속성명이 필요해요.");
-  if (!settings.dateProperty) throw new Error("Notion 날짜 속성명이 필요해요.");
+  if (!settings.notionParentId) throw new Error("Notion 데이터베이스 ID가 설정되지 않았어요.");
+  if (!settings.titleProperty) throw new Error("Notion DB의 제목 칸 이름이 필요해요.");
+  if (!settings.dateProperty) throw new Error("Notion DB의 날짜 칸 이름이 필요해요.");
 }
 
 function validateRecruit(recruit) {
@@ -289,7 +298,7 @@ function buildNotionPayload(recruit, settings) {
 }
 
 function parentValue(settings) {
-  const parentType = settings.notionParentType || "database_id";
+  const parentType = settings.notionParentType || "data_source_id";
   return {
     type: parentType,
     [parentType]: normalizeNotionId(settings.notionParentId)

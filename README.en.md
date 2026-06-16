@@ -89,6 +89,10 @@ In this context, a property is simply a Notion database column. JD-Sync needs th
 
 This extension does not require a build step.
 
+## Troubleshooting
+
+If you see `Cannot read properties of undefined (reading 'sendMessage')`, the extension may have been reloaded while a Jasoseol tab was already open. Refresh the Jasoseol posting page and try syncing again.
+
 ```powershell
 node --check .\src\page-bridge.js
 node --check .\src\content.js

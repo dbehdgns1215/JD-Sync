@@ -203,6 +203,11 @@
 
   function sendRuntimeMessage(message) {
     return new Promise((resolve, reject) => {
+      if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+        reject(new Error("확장 프로그램이 업데이트되었거나 새로고침되었어요. 자소설 페이지를 새로고침한 뒤 다시 시도해 주세요."));
+        return;
+      }
+
       chrome.runtime.sendMessage(message, (response) => {
         const error = chrome.runtime.lastError;
         if (error) {

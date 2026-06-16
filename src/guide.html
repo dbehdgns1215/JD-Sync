@@ -28,7 +28,7 @@
           <h2>전체 흐름</h2>
           <ol class="flow-list">
             <li>Notion에 <code>채용 공고</code> 데이터베이스를 하나 만듭니다.</li>
-            <li>처음에는 DB에 <code>이름</code> 칸과 <code>일정일</code> 칸만 있어도 됩니다.</li>
+            <li>처음에는 DB의 첫 번째 제목 칸을 <code>이름</code>으로 바꾸고, 날짜 칸 <code>일정일</code>만 추가해도 됩니다.</li>
             <li>그 데이터베이스를 Notion Calendar에 추가합니다.</li>
             <li>자소설 공고를 즐겨찾기하면 JD-Sync가 DB에 새 줄을 만듭니다.</li>
             <li>Notion Calendar는 그 새 줄의 <code>일정일</code>을 캘린더에 보여줍니다.</li>
@@ -52,8 +52,9 @@
           </p>
           <ol class="steps">
             <li>Notion에서 <code>채용 공고</code> 같은 데이터베이스를 하나 만듭니다. 일반 페이지 안에 만들어도 되고, 데이터베이스를 풀페이지로 만들어도 됩니다.</li>
-            <li>처음에는 <code>이름</code> 칸과 <code>일정일</code> 칸만 있으면 됩니다.</li>
-            <li><code>이름</code> 칸은 Title 타입, <code>일정일</code> 칸은 Date 타입이어야 합니다.</li>
+            <li>DB를 만들면 맨 왼쪽에 페이지 제목 칸이 하나 생깁니다. 그 칸 이름을 <code>이름</code>으로 바꿉니다.</li>
+            <li><code>일정일</code>이라는 날짜 칸을 하나 추가합니다.</li>
+            <li>새 텍스트 칸을 만들어서 <code>이름</code>이라고 붙이면 안 됩니다. Notion API에서 말하는 <code>rich_text</code>가 바로 그 텍스트 칸입니다.</li>
             <li>DB 우측 상단 메뉴에서 방금 만든 integration을 connection으로 추가합니다.</li>
             <li>DB 설정에서 data source ID를 복사해 아래 Notion Data Source ID에 붙여넣습니다.</li>
           </ol>
@@ -77,7 +78,7 @@
             <ul>
               <li>Notion 토큰</li>
               <li>Notion Data Source ID</li>
-              <li>제목 칸 이름: <code>이름</code> 또는 <code>액티비티</code></li>
+              <li>공고 제목을 넣을 칸: DB의 첫 번째 제목 칸 이름, 예: <code>이름</code> 또는 <code>액티비티</code></li>
               <li>날짜 칸 이름: <code>일정일</code> 또는 <code>날짜</code></li>
             </ul>
             <p>회사, URL 같은 추가 칸은 Notion DB에 직접 만든 경우에만 입력하면 됩니다.</p>
@@ -118,9 +119,11 @@
           <p class="hint">
             여기에는 Notion 데이터베이스에 실제로 만들어 둔 칸 이름을 적습니다. JD-Sync가 새 공고 줄을 만들 때
             <code>공고 제목은 어느 칸에 넣을지</code>, <code>날짜는 어느 칸에 넣을지</code>를 알려주는 설정입니다.
+            공고 제목 칸은 일반 텍스트 칸이 아니라 DB의 첫 번째 제목 칸이어야 합니다.
           </p>
           <div class="property-example">
-            직접 만든 템플릿 DB라면 <code>이름</code> / <code>일정일</code>을 쓰면 됩니다. Notion Calendar 기본 DB를 쓰고 있다면
+            직접 만든 템플릿 DB라면 첫 번째 제목 칸을 <code>이름</code>으로 바꾸고 <code>일정일</code> 날짜 칸을 추가하면 됩니다.
+            Notion Calendar 기본 DB를 쓰고 있다면
             <code>액티비티</code> / <code>날짜</code>로 바꾸세요.
           </div>
           <div class="grid">

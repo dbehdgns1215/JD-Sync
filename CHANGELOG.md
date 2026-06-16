@@ -25,3 +25,4 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0
 ### Fixed
 
 - Show a clear refresh instruction when a Jasoseol tab still has an old content script after the extension is reloaded.
+- Translate common Notion property type errors into Korean setup guidance.

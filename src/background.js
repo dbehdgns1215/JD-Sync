@@ -400,11 +400,66 @@ async function createNotionPage(payload, settings) {
   const body = safeJson(text);
 
   if (!response.ok) {
-    const message = body && body.message ? body.message : text || response.statusText;
+    const rawMessage = body && body.message ? body.message : text || response.statusText;
+    const message = explainNotionApiError(rawMessage, settings);
     throw new Error(`Notion API 오류 (${response.status}): ${message}`);
   }
 
   return body;
+}
+
+function explainNotionApiError(message, settings) {
+  const text = String(message || "");
+  const expectedTypeMatch = text.match(/^(.+?) is expected to be ([a-z_]+)/);
+
+  if (!expectedTypeMatch) return text;
+
+  const propertyName = expectedTypeMatch[1].trim();
+  const expectedType = expectedTypeMatch[2];
+  const readableType = readableNotionType(expectedType);
+
+  if (propertyName === settings.titleProperty && expectedType === "rich_text") {
+    return [
+      `"${propertyName}" 칸은 Notion에서 텍스트 칸입니다.`,
+      "공고 제목을 넣을 칸에는 DB의 첫 번째 제목 칸, 즉 페이지 제목 칸 이름을 입력해야 합니다.",
+      `첫 번째 제목 칸 이름을 "${propertyName}"으로 바꾸거나, 설정의 공고 제목 칸을 실제 제목 칸 이름으로 바꿔 주세요.`,
+      "참고: Notion API의 rich_text는 노션 화면의 텍스트 속성입니다."
+    ].join(" ");
+  }
+
+  if (propertyName === settings.titleProperty && expectedType !== "title") {
+    return [
+      `"${propertyName}" 칸 타입이 ${readableType}입니다.`,
+      "공고 제목을 넣을 칸에는 DB의 첫 번째 제목 칸 이름을 입력해야 합니다."
+    ].join(" ");
+  }
+
+  if (propertyName === settings.dateProperty && expectedType !== "date") {
+    return [
+      `"${propertyName}" 칸 타입이 ${readableType}입니다.`,
+      "날짜를 넣을 칸에는 Notion의 날짜 속성 칸 이름을 입력해야 합니다."
+    ].join(" ");
+  }
+
+  return `"${propertyName}" 칸 타입이 ${readableType}입니다. 설정에서 이 칸을 해당 타입에 맞는 입력칸에 연결해 주세요.`;
+}
+
+function readableNotionType(type) {
+  const labels = {
+    title: "제목",
+    rich_text: "텍스트",
+    date: "날짜",
+    url: "URL",
+    number: "숫자",
+    select: "선택",
+    multi_select: "다중 선택",
+    checkbox: "체크박스",
+    people: "사람",
+    files: "파일",
+    email: "이메일",
+    phone_number: "전화번호"
+  };
+  return labels[type] || type;
 }
 
 function defaultNotionVersion(parentType) {

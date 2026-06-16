@@ -40,7 +40,7 @@ You only need these two columns to start:
 
 | Property | Type | Required |
 | --- | --- | --- |
-| `Name` or `이름` | Title | Yes |
+| `Name` or `이름` | Title, the first page-title column | Yes |
 | `Schedule Date` or `일정일` | Date | Yes |
 
 These columns are optional. Enter their names in JD-Sync only if you created matching columns in your Notion database. Leave the matching JD-Sync setting blank if you did not create the column.
@@ -55,7 +55,7 @@ These columns are optional. Enter their names in JD-Sync only if you created mat
 | `Jasoseol ID` or `자소설 ID` | Number | No |
 | `Duties` or `직무` | Text | No |
 
-In this context, a property is simply a Notion database column. JD-Sync needs these names so it knows which column should receive the title, schedule date, URL, and other posting data. If you use Notion Calendar's default database, enter `액티비티` for the title column and `날짜` for the date column.
+In this context, a property is simply a Notion database column. JD-Sync needs these names so it knows which column should receive the title, schedule date, URL, and other posting data. The posting title column must be the database's first page-title column, not a regular text column. In the Notion API, `rich_text` means Notion's regular text property. If you use Notion Calendar's default database, enter `액티비티` for the title column and `날짜` for the date column.
 
 ## Local Installation
 
@@ -74,7 +74,7 @@ In this context, a property is simply a Notion database column. JD-Sync needs th
 1. Create a Notion internal integration from the Notion developer portal.
 2. Copy the integration token.
 3. Create a Notion database, such as `Job Postings`. It can be inside a regular page or opened as a full-page database.
-4. Add at least a title column and a date column. The Korean defaults are `이름` and `일정일`.
+4. Rename the first page-title column to `이름` and add a date column named `일정일`.
 5. Add company, posting URL, and other columns only if you want them as separate database columns.
 6. Use the database menu to add the integration as a connection.
 7. Copy the data source ID from the database settings. This is the safest option for Notion's newer API.

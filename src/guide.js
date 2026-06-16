@@ -7,13 +7,15 @@ const DEFAULT_SETTINGS = {
   notionVersion: "2025-09-03",
   titleProperty: "이름",
   dateProperty: "일정일",
+  deadlineDateProperty: "마감일",
   companyProperty: "",
   recruitTitleProperty: "",
   urlProperty: "",
   applyUrlProperty: "",
-  startDateProperty: "",
+  startDateProperty: "시작일",
   sourceIdProperty: "",
-  dutiesProperty: ""
+  dutiesProperty: "",
+  syncStartDateToCalendar: false
 };
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
@@ -69,7 +71,9 @@ function renderChecklist(settings) {
     ["Notion 토큰", Boolean(settings.notionToken)],
     ["Notion DB ID", Boolean(settings.notionParentId)],
     ["제목 칸 이름", Boolean(settings.titleProperty)],
-    ["날짜 칸 이름", Boolean(settings.dateProperty)],
+    ["캘린더 표시일 칸 이름", Boolean(settings.dateProperty)],
+    ["마감일 칸 이름", Boolean(settings.deadlineDateProperty)],
+    ["시작일 칸 이름", Boolean(settings.startDateProperty)],
     ["자동 동기화", Boolean(settings.autoSync)]
   ];
 

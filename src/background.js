@@ -7,13 +7,15 @@ const DEFAULT_SETTINGS = {
   notionVersion: "2025-09-03",
   titleProperty: "이름",
   dateProperty: "일정일",
+  deadlineDateProperty: "마감일",
   companyProperty: "",
   recruitTitleProperty: "",
   urlProperty: "",
   applyUrlProperty: "",
-  startDateProperty: "",
+  startDateProperty: "시작일",
   sourceIdProperty: "",
-  dutiesProperty: ""
+  dutiesProperty: "",
+  syncStartDateToCalendar: false
 };
 
 const GUIDE_PATH = "src/guide.html";
@@ -224,36 +226,65 @@ async function syncRecruit(recruit, trigger) {
   validateRecruit(recruit);
 
   const syncedRecruitIds = await getSyncedRecruitIds();
-  if (settings.preventDuplicates && syncedRecruitIds[recruit.id]) {
+  const existingSync = syncedRecruitIds[recruit.id] || null;
+  const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
+  const shouldSyncStartDate = shouldCreateStartDateCalendarEntry(recruit, settings);
+  const startAlreadySynced = Boolean(existingSync && existingSync.startPageId);
+
+  if (settings.preventDuplicates && deadlineAlreadySynced && (!shouldSyncStartDate || startAlreadySynced)) {
     const message = "이미 Notion에 동기화된 공고예요.";
     await appendLog({ level: "info", message, recruit, at: new Date().toISOString() });
     return { ok: true, skipped: true, message };
   }
 
-  const notionPayload = buildNotionPayload(recruit, settings);
-  const notionPage = await createNotionPage(notionPayload, settings);
+  const deadlinePage = settings.preventDuplicates && deadlineAlreadySynced
+    ? null
+    : await createNotionPage(buildNotionPayload(recruit, settings, "deadline"), settings);
+  const startPage = shouldSyncStartDate && (!settings.preventDuplicates || !startAlreadySynced)
+    ? await createNotionPage(buildNotionPayload(recruit, settings, "start"), settings)
+    : null;
 
   syncedRecruitIds[recruit.id] = {
-    pageId: notionPage.id,
+    ...(existingSync || {}),
+    pageId: deadlinePage ? deadlinePage.id : existingSync && existingSync.pageId,
+    deadlinePageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.deadlinePageId || existingSync.pageId),
+    startPageId: startPage ? startPage.id : existingSync && existingSync.startPageId,
     syncedAt: new Date().toISOString(),
-    title: recruit.displayTitle || recruit.title
+    title: recruit.displayTitle || recruit.title,
+    calendarDateProperty: settings.dateProperty,
+    syncStartDateToCalendar: Boolean(settings.syncStartDateToCalendar)
   };
   await chrome.storage.local.set({ syncedRecruitIds });
 
-  const successMessage = `${recruit.displayTitle || recruit.title} 동기화 완료`;
-  await appendLog({ level: "success", message: successMessage, recruit, notionPageId: notionPage.id, at: new Date().toISOString() });
+  const successMessage = `${recruit.displayTitle || recruit.title} ${startPage ? "시작일 포함 동기화 완료" : "동기화 완료"}`;
+  await appendLog({
+    level: "success",
+    message: successMessage,
+    recruit,
+    notionPageId: deadlinePage ? deadlinePage.id : syncedRecruitIds[recruit.id].deadlinePageId,
+    startNotionPageId: startPage ? startPage.id : syncedRecruitIds[recruit.id].startPageId,
+    at: new Date().toISOString()
+  });
 
   if (settings.enableNotifications) {
     notify(successMessage);
   }
 
-  return { ok: true, pageId: notionPage.id };
+  return {
+    ok: true,
+    pageId: syncedRecruitIds[recruit.id].deadlinePageId,
+    startPageId: syncedRecruitIds[recruit.id].startPageId || null
+  };
 }
 
 async function getSettings() {
   const syncSettings = await chrome.storage.sync.get(DEFAULT_SETTINGS);
   const localSettings = await chrome.storage.local.get({ notionToken: "" });
-  return { ...DEFAULT_SETTINGS, ...syncSettings, notionToken: localSettings.notionToken || "" };
+  const settings = { ...DEFAULT_SETTINGS, ...syncSettings, notionToken: localSettings.notionToken || "" };
+  if (settings.dateProperty === "마감일") settings.dateProperty = DEFAULT_SETTINGS.dateProperty;
+  if (!settings.deadlineDateProperty) settings.deadlineDateProperty = DEFAULT_SETTINGS.deadlineDateProperty;
+  if (!settings.startDateProperty) settings.startDateProperty = DEFAULT_SETTINGS.startDateProperty;
+  return settings;
 }
 
 async function getSyncedRecruitIds() {
@@ -275,13 +306,18 @@ function validateRecruit(recruit) {
   }
 }
 
-function buildNotionPayload(recruit, settings) {
+function buildNotionPayload(recruit, settings, calendarEntryType) {
   const properties = {};
-  const mainDate = recruit.endTime || recruit.startTime;
+  const isStartEntry = calendarEntryType === "start";
+  const calendarDate = isStartEntry ? recruit.startTime : recruit.endTime || recruit.startTime;
+  const title = isStartEntry
+    ? `[시작] ${recruit.displayTitle || recruit.title || "자소설 채용 공고"}`
+    : recruit.displayTitle || recruit.title || "자소설 채용 공고";
 
-  properties[settings.titleProperty] = titleValue(recruit.displayTitle || recruit.title || "자소설 채용 공고");
-  properties[settings.dateProperty] = dateValue(mainDate);
+  properties[settings.titleProperty] = titleValue(title);
+  properties[settings.dateProperty] = dateValue(calendarDate);
 
+  addDate(properties, settings.deadlineDateProperty, recruit.endTime);
   addRichText(properties, settings.companyProperty, recruit.companyName);
   addRichText(properties, settings.recruitTitleProperty, recruit.title);
   addUrl(properties, settings.urlProperty, recruit.recruitUrl);
@@ -295,6 +331,12 @@ function buildNotionPayload(recruit, settings) {
     properties,
     children: buildChildren(recruit)
   };
+}
+
+function shouldCreateStartDateCalendarEntry(recruit, settings) {
+  if (!settings.syncStartDateToCalendar || !recruit.startTime) return false;
+  if (!recruit.endTime) return true;
+  return normalizeDate(recruit.startTime) !== normalizeDate(recruit.endTime);
 }
 
 function parentValue(settings) {
@@ -434,7 +476,7 @@ function explainNotionApiError(message, settings) {
     ].join(" ");
   }
 
-  if (propertyName === settings.dateProperty && expectedType !== "date") {
+  if ([settings.dateProperty, settings.deadlineDateProperty, settings.startDateProperty].includes(propertyName) && expectedType !== "date") {
     return [
       `"${propertyName}" 칸 타입이 ${readableType}입니다.`,
       "날짜를 넣을 칸에는 Notion의 날짜 속성 칸 이름을 입력해야 합니다."

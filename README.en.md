@@ -32,7 +32,7 @@ Recruiting calendars are useful only when they stay current. JD-Sync keeps bookm
 
 Notion Calendar does not provide a token-only flow where an external app directly inserts calendar events. Instead, Notion Calendar can display pages from a Notion database that has a date property.
 
-You should first create a Notion database for recruiting schedules and add that database to Notion Calendar. After that, when you bookmark a Jasoseol posting, JD-Sync creates a new row in that database and Notion Calendar displays the row's calendar date. By default, JD-Sync writes the deadline into the calendar-date property.
+You should first create a Notion database for recruiting schedules and add that database to Notion Calendar. After that, when you bookmark a Jasoseol posting, JD-Sync creates a new row in that database and Notion Calendar displays the row's schedule date. By default, JD-Sync writes only the deadline into the schedule-date property.
 
 ## Notion Database Columns
 
@@ -56,9 +56,7 @@ These columns are optional. Enter their names in JD-Sync only if you created mat
 | `Jasoseol ID` or `자소설 ID` | Number | No |
 | `Duties` or `직무` | Text | No |
 
-In this context, a property is simply a Notion database column. JD-Sync needs these names so it knows which column should receive the title, calendar date, deadline, start date, URL, and other posting data. The posting title column must be the database's first page-title column, not a regular text column. In the Notion API, `rich_text` means Notion's regular text property. If you use Notion Calendar's default database, enter `액티비티` for the title column and `날짜` for the calendar-date column.
-
-If you enable the "also create a separate calendar event for the start date" option, JD-Sync creates one additional row for the same posting. The extra row writes the start date into the calendar-date property and prefixes the title with `[시작]`.
+In this context, a property is simply a Notion database column. JD-Sync needs these names so it knows which column should receive the title, schedule date, deadline, start date, URL, and other posting data. The posting title column must be the database's first page-title column, not a regular text column. In the Notion API, `rich_text` means Notion's regular text property. If you use Notion Calendar's default database, enter `액티비티` for the title column and `날짜` for the schedule-date column. If you enable the start-date calendar option, JD-Sync can either write a start-to-deadline range into the schedule-date property or create an additional `[시작]` row.
 
 ## Local Installation
 

@@ -15,6 +15,12 @@ const DEFAULT_SETTINGS = {
   startDateProperty: "시작일",
   sourceIdProperty: "",
   dutiesProperty: "",
+  includeStartDateInCalendar: false,
+  startDateCalendarMode: "range"
+};
+
+const LEGACY_SETTINGS = {
+  includeStartDateInScheduleRange: false,
   syncStartDateToCalendar: false
 };
 
@@ -166,6 +172,7 @@ async function saveSettings(incomingSettings) {
   }
 
   await chrome.storage.sync.set(nextSettings);
+  await chrome.storage.sync.remove(Object.keys(LEGACY_SETTINGS));
   if (Object.prototype.hasOwnProperty.call(incomingSettings, "notionToken")) {
     await chrome.storage.local.set({ notionToken: String(incomingSettings.notionToken || "").trim() });
   }
@@ -182,6 +189,7 @@ async function resetSettings(preserveToken) {
   }
 
   await chrome.storage.sync.set(nextSettings);
+  await chrome.storage.sync.remove(Object.keys(LEGACY_SETTINGS));
   if (!preserveToken) {
     await chrome.storage.local.set({ notionToken: "" });
   }
@@ -228,10 +236,10 @@ async function syncRecruit(recruit, trigger) {
   const syncedRecruitIds = await getSyncedRecruitIds();
   const existingSync = syncedRecruitIds[recruit.id] || null;
   const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
-  const shouldSyncStartDate = shouldCreateStartDateCalendarEntry(recruit, settings);
+  const shouldSyncSeparateStartDate = shouldCreateSeparateStartDatePage(recruit, settings);
   const startAlreadySynced = Boolean(existingSync && existingSync.startPageId);
 
-  if (settings.preventDuplicates && deadlineAlreadySynced && (!shouldSyncStartDate || startAlreadySynced)) {
+  if (settings.preventDuplicates && deadlineAlreadySynced && (!shouldSyncSeparateStartDate || startAlreadySynced)) {
     const message = "이미 Notion에 동기화된 공고예요.";
     await appendLog({ level: "info", message, recruit, at: new Date().toISOString() });
     return { ok: true, skipped: true, message };
@@ -240,19 +248,20 @@ async function syncRecruit(recruit, trigger) {
   const deadlinePage = settings.preventDuplicates && deadlineAlreadySynced
     ? null
     : await createNotionPage(buildNotionPayload(recruit, settings, "deadline"), settings);
-  const startPage = shouldSyncStartDate && (!settings.preventDuplicates || !startAlreadySynced)
+  const startPage = shouldSyncSeparateStartDate && (!settings.preventDuplicates || !startAlreadySynced)
     ? await createNotionPage(buildNotionPayload(recruit, settings, "start"), settings)
     : null;
 
   syncedRecruitIds[recruit.id] = {
     ...(existingSync || {}),
-    pageId: deadlinePage ? deadlinePage.id : existingSync && existingSync.pageId,
+    pageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.pageId || existingSync.deadlinePageId),
     deadlinePageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.deadlinePageId || existingSync.pageId),
     startPageId: startPage ? startPage.id : existingSync && existingSync.startPageId,
     syncedAt: new Date().toISOString(),
     title: recruit.displayTitle || recruit.title,
     calendarDateProperty: settings.dateProperty,
-    syncStartDateToCalendar: Boolean(settings.syncStartDateToCalendar)
+    includeStartDateInCalendar: Boolean(settings.includeStartDateInCalendar),
+    startDateCalendarMode: settings.startDateCalendarMode
   };
   await chrome.storage.local.set({ syncedRecruitIds });
 
@@ -278,12 +287,23 @@ async function syncRecruit(recruit, trigger) {
 }
 
 async function getSettings() {
-  const syncSettings = await chrome.storage.sync.get(DEFAULT_SETTINGS);
+  const syncSettings = await chrome.storage.sync.get({ ...DEFAULT_SETTINGS, ...LEGACY_SETTINGS });
   const localSettings = await chrome.storage.local.get({ notionToken: "" });
   const settings = { ...DEFAULT_SETTINGS, ...syncSettings, notionToken: localSettings.notionToken || "" };
   if (settings.dateProperty === "마감일") settings.dateProperty = DEFAULT_SETTINGS.dateProperty;
   if (!settings.deadlineDateProperty) settings.deadlineDateProperty = DEFAULT_SETTINGS.deadlineDateProperty;
   if (!settings.startDateProperty) settings.startDateProperty = DEFAULT_SETTINGS.startDateProperty;
+  if (settings.includeStartDateInScheduleRange) {
+    settings.includeStartDateInCalendar = true;
+    settings.startDateCalendarMode = "range";
+  }
+  if (settings.syncStartDateToCalendar) {
+    settings.includeStartDateInCalendar = true;
+    settings.startDateCalendarMode = "separate";
+  }
+  if (!["range", "separate"].includes(settings.startDateCalendarMode)) {
+    settings.startDateCalendarMode = DEFAULT_SETTINGS.startDateCalendarMode;
+  }
   return settings;
 }
 
@@ -309,13 +329,20 @@ function validateRecruit(recruit) {
 function buildNotionPayload(recruit, settings, calendarEntryType) {
   const properties = {};
   const isStartEntry = calendarEntryType === "start";
-  const calendarDate = isStartEntry ? recruit.startTime : recruit.endTime || recruit.startTime;
+  const useScheduleRange =
+    settings.includeStartDateInCalendar &&
+    settings.startDateCalendarMode === "range" &&
+    recruit.startTime &&
+    recruit.endTime &&
+    normalizeDate(recruit.startTime) !== normalizeDate(recruit.endTime);
+  const calendarStart = isStartEntry ? recruit.startTime : useScheduleRange ? recruit.startTime : recruit.endTime || recruit.startTime;
+  const calendarEnd = useScheduleRange ? recruit.endTime : "";
   const title = isStartEntry
     ? `[시작] ${recruit.displayTitle || recruit.title || "자소설 채용 공고"}`
     : recruit.displayTitle || recruit.title || "자소설 채용 공고";
 
   properties[settings.titleProperty] = titleValue(title);
-  properties[settings.dateProperty] = dateValue(calendarDate);
+  properties[settings.dateProperty] = dateRangeValue(calendarStart, calendarEnd);
 
   addDate(properties, settings.deadlineDateProperty, recruit.endTime);
   addRichText(properties, settings.companyProperty, recruit.companyName);
@@ -333,8 +360,9 @@ function buildNotionPayload(recruit, settings, calendarEntryType) {
   };
 }
 
-function shouldCreateStartDateCalendarEntry(recruit, settings) {
-  if (!settings.syncStartDateToCalendar || !recruit.startTime) return false;
+function shouldCreateSeparateStartDatePage(recruit, settings) {
+  if (!settings.includeStartDateInCalendar || settings.startDateCalendarMode !== "separate") return false;
+  if (!recruit.startTime) return false;
   if (!recruit.endTime) return true;
   return normalizeDate(recruit.startTime) !== normalizeDate(recruit.endTime);
 }
@@ -371,6 +399,13 @@ function richTextValue(content) {
 
 function dateValue(value) {
   return { date: { start: normalizeDate(value) } };
+}
+
+function dateRangeValue(startValue, endValue) {
+  const start = normalizeDate(startValue || endValue);
+  const end = normalizeDate(endValue);
+  if (!start) return { date: null };
+  return { date: { start, end: end && end !== start ? end : null } };
 }
 
 function urlValue(value) {

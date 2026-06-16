@@ -261,6 +261,52 @@ select:focus {
   height: 16px;
 }
 
+.mode-group {
+  display: grid;
+  gap: 10px;
+  margin: -4px 0 14px 25px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.mode-group[hidden] {
+  display: none;
+}
+
+.mode-group legend {
+  padding: 0 4px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.radio-option {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.radio-option input {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.radio-option span {
+  display: grid;
+  gap: 3px;
+}
+
+.radio-option small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .actions,
 .run-actions,
 .logs-header {

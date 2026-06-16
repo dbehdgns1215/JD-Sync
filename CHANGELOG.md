@@ -15,12 +15,11 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0
 - Privacy, security, contribution, and store-publishing documentation.
 - Korean-first policy documentation with English companion files.
 - Plain-language setup guide for Notion database columns and optional fields.
-- Optional start-date calendar entries that create a separate `[시작]` row.
 
 ### Changed
 
 - Notion synchronization now defaults to `data_source_id` with the `2025-09-03` API version.
-- Start and deadline dates can be stored in separate Notion date properties while Notion Calendar uses the schedule-date property.
+- The schedule-date property keeps deadline-only display by default and can optionally show the start date as a range or a separate `[시작]` row.
 - Resetting defaults keeps the saved Notion token and data source ID while clearing optional column mappings.
 
 ### Fixed

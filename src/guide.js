@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS = {
   startDateProperty: "시작일",
   sourceIdProperty: "",
   dutiesProperty: "",
-  syncStartDateToCalendar: false
+  includeStartDateInCalendar: false,
+  startDateCalendarMode: "range"
 };
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
@@ -30,6 +31,7 @@ function bindEvents() {
   document.getElementById("settingsForm").addEventListener("submit", saveSettings);
   document.getElementById("resetButton").addEventListener("click", resetDefaults);
   document.getElementById("notionParentType").addEventListener("change", handleParentTypeChange);
+  document.getElementById("includeStartDateInCalendar").addEventListener("change", updateStartDateModeVisibility);
   document.getElementById("syncSourceButton").addEventListener("click", syncSourceTab);
   document.getElementById("clearLogsButton").addEventListener("click", clearLogs);
 }
@@ -53,7 +55,10 @@ function renderSettings(settings) {
     const element = document.getElementById(key);
     if (!element) continue;
 
-    if (element.type === "checkbox") {
+    if (key === "startDateCalendarMode") {
+      const selected = document.querySelector(`input[name="startDateCalendarMode"][value="${settings[key] || DEFAULT_SETTINGS.startDateCalendarMode}"]`);
+      if (selected) selected.checked = true;
+    } else if (element.type === "checkbox") {
       element.checked = Boolean(settings[key]);
     } else {
       element.value = settings[key] || "";
@@ -61,6 +66,7 @@ function renderSettings(settings) {
   }
 
   document.getElementById("notionToken").value = settings.notionToken || "";
+  updateStartDateModeVisibility();
 }
 
 function renderChecklist(settings) {
@@ -71,7 +77,7 @@ function renderChecklist(settings) {
     ["Notion 토큰", Boolean(settings.notionToken)],
     ["Notion DB ID", Boolean(settings.notionParentId)],
     ["제목 칸 이름", Boolean(settings.titleProperty)],
-    ["캘린더 표시일 칸 이름", Boolean(settings.dateProperty)],
+    ["캘린더 표시 칸 이름", Boolean(settings.dateProperty)],
     ["마감일 칸 이름", Boolean(settings.deadlineDateProperty)],
     ["시작일 칸 이름", Boolean(settings.startDateProperty)],
     ["자동 동기화", Boolean(settings.autoSync)]
@@ -178,7 +184,12 @@ function collectSettings() {
   for (const key of SETTING_KEYS) {
     const element = document.getElementById(key);
     if (!element) continue;
-    settings[key] = element.type === "checkbox" ? element.checked : element.value.trim();
+    if (key === "startDateCalendarMode") {
+      const checked = document.querySelector('input[name="startDateCalendarMode"]:checked');
+      settings[key] = checked ? checked.value : DEFAULT_SETTINGS.startDateCalendarMode;
+    } else {
+      settings[key] = element.type === "checkbox" ? element.checked : element.value.trim();
+    }
   }
 
   settings.notionToken = document.getElementById("notionToken").value.trim();
@@ -188,6 +199,13 @@ function collectSettings() {
   }
 
   return settings;
+}
+
+function updateStartDateModeVisibility() {
+  const checkbox = document.getElementById("includeStartDateInCalendar");
+  const modeGroup = document.getElementById("startDateCalendarMode");
+  if (!checkbox || !modeGroup) return;
+  modeGroup.hidden = !checkbox.checked;
 }
 
 function handleParentTypeChange(event) {

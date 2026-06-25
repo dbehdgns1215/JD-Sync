@@ -25,13 +25,15 @@ node --check .\src\popup.js
   - `LICENSE`
   - `PRIVACY.md`
   - `PRIVACY.en.md`
+  - `TERMS.md`
+  - `TERMS.en.md`
 
 ## 2. Package
 
 From the repository root:
 
 ```powershell
-Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md -DestinationPath .\jd-sync.zip -Force
+Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md,.\TERMS.md,.\TERMS.en.md -DestinationPath .\jd-sync.zip -Force
 ```
 
 `manifest.json` must be at the root of the zip.
@@ -74,3 +76,5 @@ Suggested permission justifications:
 ## 5. Privacy Review Notes
 
 This extension handles website content and authentication information because it reads posting metadata and stores a Notion token. Keep `PRIVACY.md` hosted somewhere public and link it from the dashboard privacy field before submitting.
+
+JD-Sync does not collect full posting HTML, image files, or attachments, and it does not copy those materials into Notion. Keep the store listing and privacy disclosures consistent with this limited metadata-only sync scope.

@@ -2,9 +2,9 @@
 
 [한국어](./README.md)
 
-Sync job-posting bookmarks from recruiting sites into a Notion database that can be shown in Notion Calendar.
+Sync selected schedule metadata from bookmarked job postings into a Notion database that can be shown in Notion Calendar.
 
-JD-Sync currently supports [Jasoseol](https://jasoseol.com/recruit). When you bookmark a recruit posting, the Chrome extension creates a Notion page with the company, posting title, deadline, source URL, and optional apply URL.
+JD-Sync currently supports [Jasoseol](https://jasoseol.com/recruit). When you bookmark a recruit posting, the Chrome extension creates a Notion page with selected metadata needed for schedule management, such as company, posting title, start date, deadline, source URL, and optional apply URL.
 
 ## Why
 
@@ -19,6 +19,16 @@ Recruiting calendars are useful only when they stay current. JD-Sync keeps bookm
 - Supports manual sync from the popup or guide page after setup
 - Prevents duplicate pages by remembering synced Jasoseol posting IDs
 - Stores your Notion token locally in Chrome extension storage
+
+## Usage Scope and Important Notes
+
+JD-Sync is a tool for personal recruiting schedule management and job-search records.
+
+JD-Sync syncs only selected metadata from postings the user directly bookmarked. It does not provide a feature that collects full posting HTML, image files, or attachments, and it does not copy those materials into Notion.
+
+Users may not use JD-Sync for bulk collection of job posting data, commercial use, redistribution, public sharing, or providing job posting data to third parties. Rights to original posting content belong to the relevant recruiting sites, companies, or rightful owners.
+
+See [TERMS.en.md](./TERMS.en.md) for the full terms of use and [PRIVACY.en.md](./PRIVACY.en.md) for privacy details.
 
 ## Requirements
 
@@ -105,7 +115,7 @@ node --check .\src\popup.js
 To package a local release:
 
 ```powershell
-Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md -DestinationPath .\jd-sync.zip -Force
+Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md,.\TERMS.md,.\TERMS.en.md -DestinationPath .\jd-sync.zip -Force
 ```
 
 ## Chrome Web Store Publishing
@@ -135,6 +145,7 @@ Please do not report security issues in public GitHub issues. See [SECURITY.md](
 
 - [SUPPORT.md](./SUPPORT.md)
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [TERMS.en.md](./TERMS.en.md)
 - [Chrome Web Store publishing guide](./docs/CHROME_WEB_STORE.md)
 
 ## License

@@ -25,13 +25,15 @@ node --check .\src\popup.js
   - `LICENSE`
   - `PRIVACY.md`
   - `PRIVACY.en.md`
+  - `TERMS.md`
+  - `TERMS.en.md`
 
 ## 2. 패키징
 
 저장소 루트에서 실행합니다.
 
 ```powershell
-Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md -DestinationPath .\jd-sync.zip -Force
+Compress-Archive -Path .\manifest.json,.\src,.\assets,.\LICENSE,.\PRIVACY.md,.\PRIVACY.en.md,.\TERMS.md,.\TERMS.en.md -DestinationPath .\jd-sync.zip -Force
 ```
 
 zip 안의 최상위에 `manifest.json`이 있어야 합니다.
@@ -74,3 +76,5 @@ Sync bookmarked recruiting postings from Jasoseol to a user-configured Notion da
 ## 5. 개인정보 심사 참고
 
 JD-Sync는 웹사이트 콘텐츠와 인증 정보를 처리합니다. 공고 메타데이터를 읽고 Notion 토큰을 저장하기 때문입니다. 제출 전에 `PRIVACY.md`를 공개 URL로 호스팅하거나 저장소 공개 링크를 준비해 Chrome Web Store 개인정보 항목에 입력하세요.
+
+JD-Sync는 공고 원문 HTML, 이미지 파일, 첨부 파일 전체를 수집하거나 Notion에 복제하지 않습니다. 스토어 설명과 개인정보 항목에서도 동기화 범위가 일부 메타데이터로 제한된다는 점을 일관되게 설명하세요.

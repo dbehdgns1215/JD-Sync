@@ -15,6 +15,8 @@ JD-Sync may handle:
 - Jasoseol posting metadata, including company name, posting title, start date, deadline, posting URL, apply URL, posting ID, and duties
 - Local sync history, including recently synced posting IDs and status messages
 
+JD-Sync does not collect full posting HTML, image files, or attachments, and it does not copy those materials into Notion. Sync is limited to selected metadata needed for schedule management.
+
 JD-Sync does not intentionally collect names, email addresses, payment information, health information, or personal communications.
 
 ## How Data Is Used

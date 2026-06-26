@@ -19,13 +19,11 @@ const DEFAULT_SETTINGS = {
 };
 
 const LEGACY_SETTINGS = {
-  enableNotifications: false,
   includeStartDateInScheduleRange: false,
   syncStartDateToCalendar: false
 };
 
 const GUIDE_PATH = "src/guide.html";
-const LAST_SOURCE_TAB_KEY = "lastSourceTab";
 const TERMS_CONSENT_KEY = "termsConsent";
 const TERMS_CONSENT_VERSION = "2026-06-27";
 const NOTION_RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -84,13 +82,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "REMEMBER_SOURCE_TAB") {
-    rememberSourceTab(message.tab)
-      .then(() => sendResponse({ ok: true }))
-      .catch((error) => sendResponse({ ok: false, error: toErrorMessage(error) }));
-    return true;
-  }
-
   if (message.type === "SAVE_SETTINGS") {
     saveSettings(message.settings || {})
       .then(() => sendResponse({ ok: true }))
@@ -112,17 +103,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "SYNC_LAST_SOURCE_TAB") {
-    syncLastSourceTab()
-      .then((result) => sendResponse(result))
-      .catch(async (error) => {
-        const result = { ok: false, error: toErrorMessage(error) };
-        await appendLog({ level: "error", message: result.error, at: new Date().toISOString() });
-        sendResponse(result);
-      });
-    return true;
-  }
-
   if (message.type === "CLEAR_SYNC_LOGS") {
     chrome.storage.local
       .set({ syncLogs: [] })
@@ -136,19 +116,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 async function openGuidePage() {
   await chrome.tabs.create({ url: chrome.runtime.getURL(GUIDE_PATH) });
-}
-
-async function rememberSourceTab(tab) {
-  if (!tab || typeof tab.id !== "number") return;
-
-  await chrome.storage.local.set({
-    [LAST_SOURCE_TAB_KEY]: {
-      id: tab.id,
-      url: tab.url || "",
-      title: tab.title || "",
-      capturedAt: new Date().toISOString()
-    }
-  });
 }
 
 async function getPopupState() {
@@ -168,7 +135,6 @@ async function getGuideState() {
   const settings = await getSettings();
   const local = await chrome.storage.local.get({
     syncLogs: [],
-    [LAST_SOURCE_TAB_KEY]: null,
     [TERMS_CONSENT_KEY]: null
   });
 
@@ -176,7 +142,6 @@ async function getGuideState() {
     ok: true,
     settings,
     logs: local.syncLogs || [],
-    lastSourceTab: local[LAST_SOURCE_TAB_KEY] || null,
     consent: consentState(local[TERMS_CONSENT_KEY])
   };
 }
@@ -234,34 +199,6 @@ async function resetSettings(preserveToken) {
   if (!preserveToken) {
     await chrome.storage.local.set({ notionToken: "" });
   }
-}
-
-async function syncLastSourceTab() {
-  const local = await chrome.storage.local.get({ [LAST_SOURCE_TAB_KEY]: null });
-  const sourceTab = local[LAST_SOURCE_TAB_KEY];
-
-  if (!sourceTab || typeof sourceTab.id !== "number") {
-    throw new Error("동기화할 자소설 탭 기록이 없어요. 자소설 공고 상세 페이지에서 확장 아이콘을 눌러 주세요.");
-  }
-
-  if (!/^https:\/\/(www\.)?jasoseol\.com\/recruit\/\d+/.test(sourceTab.url || "")) {
-    throw new Error("직전에 선택한 탭이 자소설 공고 상세 페이지가 아니에요.");
-  }
-
-  return await sendTabMessage(sourceTab.id, { type: "SYNC_CURRENT_RECRUIT" });
-}
-
-function sendTabMessage(tabId, message) {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(tabId, message, (response) => {
-      const error = chrome.runtime.lastError;
-      if (error) {
-        reject(new Error(error.message));
-        return;
-      }
-      resolve(response);
-    });
-  });
 }
 
 async function syncRecruit(recruit, trigger) {

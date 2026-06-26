@@ -3,7 +3,7 @@
   "name": "JD-Sync",
   "description": "자소설닷컴에서 즐겨찾기한 채용 공고를 Notion Calendar용 Notion DB에 자동으로 추가합니다.",
   "version": "0.1.0",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://jasoseol.com/*",
     "https://www.jasoseol.com/*",

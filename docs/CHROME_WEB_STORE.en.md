@@ -68,7 +68,6 @@ Sync bookmarked recruiting postings from Jasoseol to a user-configured Notion da
 Suggested permission justifications:
 
 - `storage`: stores Notion settings and local sync history.
-- `activeTab`: lets the popup or guide sync the current Jasoseol posting page after the user clicks the extension.
 - `https://jasoseol.com/*`: detects bookmark actions and reads posting metadata.
 - `https://api.notion.com/*`: creates pages in the user's configured Notion database.
 

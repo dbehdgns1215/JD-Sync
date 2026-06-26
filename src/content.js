@@ -24,32 +24,6 @@
     syncRecruitById(id, "favorite");
   });
 
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (!message || message.type !== "SYNC_CURRENT_RECRUIT") return false;
-
-    syncCurrentRecruit()
-      .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ ok: false, error: String(error && error.message ? error.message : error) }));
-
-    return true;
-  });
-
-  async function syncCurrentRecruit() {
-    const recruit = parseRecruitFromDocument(document, location.href);
-    if (!recruit || !recruit.id) {
-      throw new Error("현재 페이지에서 자소설 공고 정보를 찾지 못했어요.");
-    }
-
-    const result = await sendRuntimeMessage({
-      type: "SYNC_RECRUIT",
-      trigger: "manual",
-      recruit
-    });
-
-    showResultToast(result);
-    return result;
-  }
-
   async function syncRecruitById(id, trigger) {
     if (!shouldHandleRequest(id, "sync")) return;
 

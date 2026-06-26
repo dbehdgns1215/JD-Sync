@@ -68,7 +68,6 @@ Sync bookmarked recruiting postings from Jasoseol to a user-configured Notion da
 권한 설명 예시:
 
 - `storage`: Notion 설정과 로컬 동기화 기록을 저장합니다.
-- `activeTab`: 사용자가 확장 프로그램을 클릭했을 때 현재 자소설 공고 페이지를 동기화합니다.
 - `https://jasoseol.com/*`: 즐겨찾기 동작을 감지하고 공고 메타데이터를 읽습니다.
 - `https://api.notion.com/*`: 사용자가 설정한 Notion 데이터베이스에 페이지를 생성합니다.
 

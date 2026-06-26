@@ -26,6 +26,8 @@ const LEGACY_SETTINGS = {
 
 const GUIDE_PATH = "src/guide.html";
 const LAST_SOURCE_TAB_KEY = "lastSourceTab";
+const TERMS_CONSENT_KEY = "termsConsent";
+const TERMS_CONSENT_VERSION = "2026-06-27";
 const NOTION_RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const NOTION_MAX_ATTEMPTS = 3;
 let syncedRecruitStorageQueue = Promise.resolve();
@@ -103,6 +105,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "ACCEPT_TERMS") {
+    acceptTerms()
+      .then((consent) => sendResponse({ ok: true, consent }))
+      .catch((error) => sendResponse({ ok: false, error: toErrorMessage(error) }));
+    return true;
+  }
+
   if (message.type === "SYNC_LAST_SOURCE_TAB") {
     syncLastSourceTab()
       .then((result) => sendResponse(result))
@@ -159,15 +168,33 @@ async function getGuideState() {
   const settings = await getSettings();
   const local = await chrome.storage.local.get({
     syncLogs: [],
-    [LAST_SOURCE_TAB_KEY]: null
+    [LAST_SOURCE_TAB_KEY]: null,
+    [TERMS_CONSENT_KEY]: null
   });
 
   return {
     ok: true,
     settings,
     logs: local.syncLogs || [],
-    lastSourceTab: local[LAST_SOURCE_TAB_KEY] || null
+    lastSourceTab: local[LAST_SOURCE_TAB_KEY] || null,
+    consent: consentState(local[TERMS_CONSENT_KEY])
   };
+}
+
+async function acceptTerms() {
+  const acceptedAt = new Date();
+  const consent = {
+    version: TERMS_CONSENT_VERSION,
+    acceptedAt: acceptedAt.toISOString()
+  };
+
+  await chrome.storage.local.set({ [TERMS_CONSENT_KEY]: consent });
+  return consentState(consent);
+}
+
+async function getTermsConsentState() {
+  const local = await chrome.storage.local.get({ [TERMS_CONSENT_KEY]: null });
+  return consentState(local[TERMS_CONSENT_KEY]);
 }
 
 async function saveSettings(incomingSettings) {
@@ -238,6 +265,11 @@ function sendTabMessage(tabId, message) {
 }
 
 async function syncRecruit(recruit, trigger) {
+  const consent = await getTermsConsentState();
+  if (!consent.accepted) {
+    throw new Error("이용 조건 동의가 필요합니다. 확장 프로그램 설정 페이지에서 동의한 뒤 다시 시도해 주세요.");
+  }
+
   const settings = await getSettings();
 
   if (trigger === "favorite" && !settings.autoSync) {
@@ -797,6 +829,18 @@ function readableNotionType(type) {
 
 function defaultNotionVersion(parentType) {
   return parentType === "data_source_id" ? "2025-09-03" : "2022-06-28";
+}
+
+function consentState(consent) {
+  const accepted =
+    Boolean(consent) &&
+    consent.version === TERMS_CONSENT_VERSION;
+
+  return {
+    accepted,
+    version: TERMS_CONSENT_VERSION,
+    acceptedAt: consent && consent.acceptedAt || ""
+  };
 }
 
 function normalizeNotionId(value) {

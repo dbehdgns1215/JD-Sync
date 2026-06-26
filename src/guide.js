@@ -31,6 +31,8 @@ function bindEvents() {
   document.getElementById("resetButton").addEventListener("click", resetDefaults);
   document.getElementById("includeStartDateInCalendar").addEventListener("change", updateStartDateModeVisibility);
   document.getElementById("clearLogsButton").addEventListener("click", clearLogs);
+  document.getElementById("termsConsentCheck").addEventListener("change", updateConsentButton);
+  document.getElementById("termsAcceptButton").addEventListener("click", acceptTerms);
 }
 
 async function loadGuideState() {
@@ -42,6 +44,7 @@ async function loadGuideState() {
 
   renderSettings(state.settings || DEFAULT_SETTINGS);
   renderLogs(state.logs || []);
+  renderConsent(state.consent);
 }
 
 function renderSettings(settings) {
@@ -119,6 +122,47 @@ async function clearLogs() {
 
   setStatus("동기화 기록을 지웠어요.");
   await loadGuideState();
+}
+
+function renderConsent(consent) {
+  const overlay = document.getElementById("termsConsentOverlay");
+  const checkbox = document.getElementById("termsConsentCheck");
+  const button = document.getElementById("termsAcceptButton");
+  if (!overlay || !checkbox || !button) return;
+
+  if (consent && consent.accepted) {
+    overlay.hidden = true;
+    return;
+  }
+
+  checkbox.checked = false;
+  button.disabled = true;
+  overlay.hidden = false;
+  window.setTimeout(() => {
+    const content = document.getElementById("termsConsentContent");
+    if (content) content.focus();
+  }, 0);
+}
+
+function updateConsentButton() {
+  const checkbox = document.getElementById("termsConsentCheck");
+  const button = document.getElementById("termsAcceptButton");
+  if (!checkbox || !button) return;
+  button.disabled = !checkbox.checked;
+}
+
+async function acceptTerms() {
+  const checkbox = document.getElementById("termsConsentCheck");
+  if (!checkbox || !checkbox.checked) return;
+
+  const result = await sendRuntimeMessage({ type: "ACCEPT_TERMS" });
+  if (!result || !result.ok || !result.consent || !result.consent.accepted) {
+    setStatus((result && result.error) || "동의 기록을 저장하지 못했어요.", true);
+    return;
+  }
+
+  document.getElementById("termsConsentOverlay").hidden = true;
+  setStatus("이용 조건 동의를 저장했어요.");
 }
 
 function collectSettings() {

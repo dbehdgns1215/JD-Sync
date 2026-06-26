@@ -51,17 +51,6 @@ h2 {
   font-size: 18px;
 }
 
-.calendar-source-note {
-  display: inline-block;
-  margin: -4px 0 14px;
-  padding: 7px 10px;
-  border-radius: 6px;
-  color: #0f766e;
-  background: #ccfbf1;
-  font-size: 13px;
-  font-weight: 850;
-}
-
 .panel {
   padding: 24px;
   margin-bottom: 16px;
@@ -343,6 +332,92 @@ code {
   background: #b91c1c;
 }
 
+.consent-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .54);
+}
+
+.consent-overlay[hidden] {
+  display: none;
+}
+
+.consent-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .28);
+}
+
+.consent-summary {
+  margin-bottom: 14px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.consent-scroll {
+  height: min(360px, 46vh);
+  overflow: auto;
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.consent-scroll h3 {
+  margin: 16px 0 6px;
+  color: #172033;
+  font-size: 13px;
+}
+
+.consent-scroll h3:first-child {
+  margin-top: 0;
+}
+
+.consent-scroll p {
+  margin: 0 0 10px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.consent-check input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+}
+
+.consent-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.consent-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
 #logList {
   margin: 0;
   padding: 0;
@@ -384,5 +459,13 @@ code {
     right: 12px;
     bottom: 12px;
     max-width: calc(100vw - 24px);
+  }
+
+  .consent-overlay {
+    padding: 12px;
+  }
+
+  .consent-dialog {
+    padding: 18px;
   }
 }

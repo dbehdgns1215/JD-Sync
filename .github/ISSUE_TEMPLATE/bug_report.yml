@@ -1,0 +1,39 @@
+name: 버그 제보
+description: JD-Sync에서 재현 가능한 문제를 제보합니다
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 요약
+      description: 어떤 문제가 발생했나요?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      description: 문제를 재현하는 정확한 순서를 적어 주세요.
+      placeholder: |
+        1. ...로 이동
+        2. ...를 클릭
+        3. ... 확인
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: 브라우저
+      placeholder: "Chrome 126"
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 또는 스크린샷
+      description: Notion 토큰, 쿠키, 비공개 계정 정보는 포함하지 마세요.

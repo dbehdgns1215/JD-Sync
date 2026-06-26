@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Jasoseol to Notion Calendar",
+  "name": "JD-Sync",
   "description": "자소설닷컴에서 즐겨찾기한 채용 공고를 Notion Calendar용 Notion DB에 자동으로 추가합니다.",
   "version": "0.1.0",
   "permissions": ["activeTab", "storage"],
@@ -17,7 +17,7 @@
       "128": "assets/icons/icon128.png"
     },
     "default_popup": "src/popup.html",
-    "default_title": "Jasoseol to Notion"
+    "default_title": "JD-Sync"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

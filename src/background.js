@@ -511,7 +511,7 @@ function findSyncedRecruitRecord(syncedRecruitIds, recruit, settings) {
 
 function validateSettings(settings) {
   if (!settings.notionToken) throw new Error("Notion API 토큰이 설정되지 않았어요.");
-  if (!settings.notionParentId) throw new Error("Notion 데이터베이스 ID가 설정되지 않았어요.");
+  if (!settings.notionParentId) throw new Error("Notion Data Source ID가 설정되지 않았어요.");
   if (!settings.titleProperty) throw new Error("Notion DB의 제목 칸 이름이 필요해요.");
   if (!settings.dateProperty) throw new Error("Notion DB의 날짜 칸 이름이 필요해요.");
 }

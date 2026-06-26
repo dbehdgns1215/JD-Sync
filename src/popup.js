@@ -1,7 +1,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("settingsButton").addEventListener("click", openSettings);
 
-  await renderPopup();
+  try {
+    await renderPopup();
+  } catch (error) {
+    setMessage(`설정 상태를 확인하지 못했어요. ${error.message || error}`, true);
+  }
 });
 
 async function renderPopup() {
@@ -23,7 +27,11 @@ async function renderPopup() {
 }
 
 async function openSettings() {
-  await sendRuntimeMessage({ type: "OPEN_GUIDE" });
+  try {
+    await sendRuntimeMessage({ type: "OPEN_GUIDE" });
+  } catch (error) {
+    setMessage(`설정 페이지를 열지 못했어요. ${error.message || error}`, true);
+  }
 }
 
 function renderLogs(logs) {

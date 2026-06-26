@@ -64,9 +64,9 @@ feat(sync): 자소설 즐겨찾기 감지 추가
 ## Pull Request Checklist
 
 - The extension loads from `chrome://extensions` without manifest errors.
-- The guide page opens automatically when no Notion token is configured.
-- The popup opens without launching the guide after a Notion token is configured.
-- Manual sync works from a Jasoseol posting detail page.
+- Notion connection values and database property names can be saved from the settings page.
+- Automatic sync works when a Jasoseol posting is bookmarked.
+- Unsync works when a Jasoseol posting bookmark is removed.
 - Automatic sync does not create duplicates for the same posting ID.
 - New permissions are documented in `README.md` and `PRIVACY.md`.
 - User-facing copy is clear in Korean.

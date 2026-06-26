@@ -36,15 +36,20 @@ function bindEvents() {
 }
 
 async function loadGuideState() {
-  const state = await sendRuntimeMessage({ type: "GET_GUIDE_STATE" });
-  if (!state || !state.ok) {
-    setStatus((state && state.error) || "설정 상태를 불러오지 못했어요.", true);
+  try {
+    const state = await sendRuntimeMessage({ type: "GET_GUIDE_STATE" });
+    if (!state || !state.ok) {
+      setStatus((state && state.error) || "설정 상태를 불러오지 못했어요.", true);
+      return;
+    }
+
+    renderSettings(state.settings || DEFAULT_SETTINGS);
+    renderLogs(state.logs || []);
+    renderConsent(state.consent);
+  } catch (error) {
+    setStatus(`설정 상태를 불러오지 못했어요. ${error.message || error}`, true);
     return;
   }
-
-  renderSettings(state.settings || DEFAULT_SETTINGS);
-  renderLogs(state.logs || []);
-  renderConsent(state.consent);
 }
 
 function renderSettings(settings) {

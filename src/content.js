@@ -12,7 +12,7 @@
     const id = normalizeId(event.data.detail && event.data.detail.employmentCompanyId) || extractIdFromUrl(location.href);
     if (!id) {
       if (event.data.kind === "favorite:remove:success") return;
-      showToast("자소설 공고 ID를 찾지 못했어요. 상세 페이지에서 수동 동기화를 시도해 주세요.", "warn");
+      showToast("자소설 공고 ID를 찾지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.", "warn");
       return;
     }
 

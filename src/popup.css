@@ -26,30 +26,21 @@ strong {
   font-size: 15px;
 }
 
-#summary {
-  margin: 0 0 12px;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-#configStatus {
-  padding: 4px 7px;
+.status-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
-  color: #475569;
-  background: #e2e8f0;
-  font-size: 12px;
-  font-weight: 800;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, .16);
 }
 
-#configStatus.ready {
-  color: #0f766e;
-  background: #ccfbf1;
+.status-dot-ready {
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, .16), 0 0 12px rgba(16, 185, 129, .65);
 }
 
-#configStatus.missing {
-  color: #b91c1c;
-  background: #fee2e2;
+.status-dot-missing {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .16), 0 0 12px rgba(239, 68, 68, .6);
 }
 
 button {

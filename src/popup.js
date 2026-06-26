@@ -1,13 +1,10 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("guideButton").addEventListener("click", openGuide);
-  document.getElementById("syncCurrentButton").addEventListener("click", syncCurrentRecruit);
+  document.getElementById("settingsButton").addEventListener("click", openSettings);
 
-  const activeTab = await getActiveTab();
-  await rememberSourceTab(activeTab);
-  await renderPopup(activeTab);
+  await renderPopup();
 });
 
-async function renderPopup(activeTab) {
+async function renderPopup() {
   const state = await sendRuntimeMessage({ type: "GET_POPUP_STATE" });
 
   if (!state || !state.ok) {
@@ -15,69 +12,18 @@ async function renderPopup(activeTab) {
     return;
   }
 
-  if (!state.configured) {
-    await openGuide();
-    window.close();
-    return;
-  }
-
-  const isRecruitDetail = activeTab && /^https:\/\/(www\.)?jasoseol\.com\/recruit\/\d+/.test(activeTab.url || "");
   const status = document.getElementById("configStatus");
-  const syncButton = document.getElementById("syncCurrentButton");
-  const summary = document.getElementById("summary");
+  const ready = Boolean(state.configured && state.hasParentId);
 
-  status.textContent = state.hasParentId ? "설정 완료" : "DB ID 필요";
-  status.className = state.hasParentId ? "ready" : "missing";
-  summary.textContent = state.hasParentId
-    ? "토큰이 저장되어 있어요. 가이드는 버튼을 눌렀을 때만 열립니다."
-    : "토큰은 있지만 Notion Parent ID가 비어 있어요. 가이드에서 DB ID를 입력해 주세요.";
-  syncButton.disabled = !isRecruitDetail || !state.hasParentId;
+  status.className = `status-dot ${ready ? "status-dot-ready" : "status-dot-missing"}`;
+  status.setAttribute("aria-label", ready ? "정상 동작 중" : "설정 필요");
+  status.title = ready ? "정상 동작 중" : "설정 필요";
 
   renderLogs(state.logs || []);
 }
 
-async function syncCurrentRecruit() {
-  setMessage("현재 공고를 동기화하는 중...");
-  const activeTab = await getActiveTab();
-
-  if (!activeTab || !activeTab.id) {
-    setMessage("현재 탭을 찾지 못했어요.", true);
-    return;
-  }
-
-  chrome.tabs.sendMessage(activeTab.id, { type: "SYNC_CURRENT_RECRUIT" }, async (response) => {
-    const error = chrome.runtime.lastError;
-    if (error) {
-      setMessage("자소설 공고 상세 페이지에서만 수동 동기화할 수 있어요.", true);
-      return;
-    }
-
-    if (!response || !response.ok) {
-      setMessage((response && response.error) || "동기화에 실패했어요.", true);
-      return;
-    }
-
-    setMessage(response.skipped ? response.message || "이미 동기화된 공고예요." : "동기화 완료!");
-    await renderPopup(activeTab);
-  });
-}
-
-async function openGuide() {
-  const activeTab = await getActiveTab();
-  await rememberSourceTab(activeTab);
+async function openSettings() {
   await sendRuntimeMessage({ type: "OPEN_GUIDE" });
-}
-
-async function rememberSourceTab(tab) {
-  if (!tab || typeof tab.id !== "number") return;
-  await sendRuntimeMessage({
-    type: "REMEMBER_SOURCE_TAB",
-    tab: {
-      id: tab.id,
-      url: tab.url || "",
-      title: tab.title || ""
-    }
-  });
 }
 
 function renderLogs(logs) {
@@ -100,11 +46,6 @@ function renderLogs(logs) {
     item.append(title, body);
     list.appendChild(item);
   }
-}
-
-async function getActiveTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab || null;
 }
 
 function sendRuntimeMessage(message) {

@@ -4,22 +4,22 @@ const DEFAULT_SETTINGS = {
   notionParentType: "data_source_id",
   notionParentId: "",
   notionVersion: "2025-09-03",
-  titleProperty: "이름",
-  dateProperty: "일정일",
+  titleProperty: "공고명",
+  dateProperty: "일정",
   deadlineDateProperty: "마감일",
-  companyProperty: "",
+  companyProperty: "회사명",
   recruitTitleProperty: "",
-  urlProperty: "",
-  applyUrlProperty: "",
+  urlProperty: "공고 URL",
+  applyUrlProperty: "지원 URL",
   startDateProperty: "시작일",
-  sourceIdProperty: "",
-  dutiesProperty: "",
+  sourceIdProperty: "공고 ID",
+  dutiesProperty: "직무",
   includeStartDateInCalendar: false,
   startDateCalendarMode: "range"
 };
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
-let currentState = null;
+let toastTimer = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
@@ -29,23 +29,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 function bindEvents() {
   document.getElementById("settingsForm").addEventListener("submit", saveSettings);
   document.getElementById("resetButton").addEventListener("click", resetDefaults);
-  document.getElementById("notionParentType").addEventListener("change", handleParentTypeChange);
   document.getElementById("includeStartDateInCalendar").addEventListener("change", updateStartDateModeVisibility);
-  document.getElementById("syncSourceButton").addEventListener("click", syncSourceTab);
   document.getElementById("clearLogsButton").addEventListener("click", clearLogs);
 }
 
 async function loadGuideState() {
   const state = await sendRuntimeMessage({ type: "GET_GUIDE_STATE" });
   if (!state || !state.ok) {
-    setStatus((state && state.error) || "가이드 상태를 불러오지 못했어요.", true);
+    setStatus((state && state.error) || "설정 상태를 불러오지 못했어요.", true);
     return;
   }
 
-  currentState = state;
   renderSettings(state.settings || DEFAULT_SETTINGS);
-  renderChecklist(state.settings || DEFAULT_SETTINGS);
-  renderSourceTab(state.lastSourceTab);
   renderLogs(state.logs || []);
 }
 
@@ -60,49 +55,12 @@ function renderSettings(settings) {
     } else if (element.type === "checkbox") {
       element.checked = Boolean(settings[key]);
     } else {
-      element.value = settings[key] || "";
+      element.value = settings[key] || DEFAULT_SETTINGS[key] || "";
     }
   }
 
   document.getElementById("notionToken").value = settings.notionToken || "";
   updateStartDateModeVisibility();
-}
-
-function renderChecklist(settings) {
-  const checklist = document.getElementById("setupChecklist");
-  checklist.textContent = "";
-
-  const items = [
-    ["Notion 토큰", Boolean(settings.notionToken)],
-    ["Notion DB ID", Boolean(settings.notionParentId)],
-    ["제목 칸 이름", Boolean(settings.titleProperty)],
-    ["캘린더 표시 칸 이름", Boolean(settings.dateProperty)],
-    ["마감일 칸 이름", Boolean(settings.deadlineDateProperty)],
-    ["시작일 칸 이름", Boolean(settings.startDateProperty)],
-    ["자동 동기화", Boolean(settings.autoSync)]
-  ];
-
-  for (const [label, ready] of items) {
-    const item = document.createElement("li");
-    item.className = ready ? "ready" : "";
-    item.textContent = ready ? `${label} 완료` : `${label} 필요`;
-    checklist.appendChild(item);
-  }
-}
-
-function renderSourceTab(tab) {
-  const label = document.getElementById("sourceTabLabel");
-  const button = document.getElementById("syncSourceButton");
-
-  if (!tab || !tab.url) {
-    label.textContent = "직전에 선택한 자소설 공고 탭이 아직 없습니다.";
-    button.disabled = true;
-    return;
-  }
-
-  const isRecruitDetail = /^https:\/\/(www\.)?jasoseol\.com\/recruit\/\d+/.test(tab.url);
-  label.textContent = isRecruitDetail ? `대상 탭: ${tab.url}` : `직전 탭은 자소설 공고 상세 페이지가 아닙니다: ${tab.url}`;
-  button.disabled = !isRecruitDetail;
 }
 
 function renderLogs(logs) {
@@ -152,20 +110,6 @@ async function resetDefaults() {
   await loadGuideState();
 }
 
-async function syncSourceTab() {
-  setStatus("직전 자소설 탭을 동기화하는 중...");
-  const result = await sendRuntimeMessage({ type: "SYNC_LAST_SOURCE_TAB" });
-
-  if (!result || !result.ok) {
-    setStatus((result && result.error) || "수동 동기화에 실패했어요.", true);
-    await loadGuideState();
-    return;
-  }
-
-  setStatus(result.skipped ? result.message || "이미 동기화된 공고예요." : "수동 동기화가 완료됐어요.");
-  await loadGuideState();
-}
-
 async function clearLogs() {
   const result = await sendRuntimeMessage({ type: "CLEAR_SYNC_LOGS" });
   if (!result || !result.ok) {
@@ -178,7 +122,7 @@ async function clearLogs() {
 }
 
 function collectSettings() {
-  const settings = {};
+  const settings = { ...DEFAULT_SETTINGS };
 
   for (const key of SETTING_KEYS) {
     const element = document.getElementById(key);
@@ -193,9 +137,9 @@ function collectSettings() {
 
   settings.notionToken = document.getElementById("notionToken").value.trim();
 
-  if (!settings.notionVersion) {
-    settings.notionVersion = defaultVersionForParent(settings.notionParentType);
-  }
+  settings.notionParentType = DEFAULT_SETTINGS.notionParentType;
+  settings.notionVersion = DEFAULT_SETTINGS.notionVersion;
+  settings.preventDuplicates = DEFAULT_SETTINGS.preventDuplicates;
 
   return settings;
 }
@@ -205,14 +149,6 @@ function updateStartDateModeVisibility() {
   const modeGroup = document.getElementById("startDateCalendarMode");
   if (!checkbox || !modeGroup) return;
   modeGroup.hidden = !checkbox.checked;
-}
-
-function handleParentTypeChange(event) {
-  document.getElementById("notionVersion").value = defaultVersionForParent(event.target.value);
-}
-
-function defaultVersionForParent(parentType) {
-  return parentType === "data_source_id" ? "2025-09-03" : "2022-06-28";
 }
 
 function sendRuntimeMessage(message) {
@@ -229,9 +165,16 @@ function sendRuntimeMessage(message) {
 }
 
 function setStatus(message, isError) {
-  const status = document.getElementById("settingsStatus");
-  status.textContent = message;
-  status.className = isError ? "status-message error" : "status-message";
+  const toast = document.getElementById("settingsToast");
+  if (!toast) return;
+
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.className = `toast show${isError ? " error" : ""}`;
+
+  toastTimer = window.setTimeout(() => {
+    toast.className = "toast";
+  }, isError ? 4200 : 2600);
 }
 
 function labelForLevel(level) {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>JD-Sync Guide</title>
+    <title>JD-Sync 설정</title>
     <link rel="stylesheet" href="guide.css" />
   </head>
   <body>
@@ -11,160 +11,159 @@
       <header class="hero">
         <div>
           <p class="eyebrow">JD-Sync</p>
-          <h1>자소설 즐겨찾기를 Notion Calendar로 보내기</h1>
-          <p class="description">
-            Notion에 채용 일정 페이지와 데이터베이스를 만들고, 그 데이터베이스를 Notion Calendar에 연결한 뒤,
-            자소설 즐겨찾기를 일정으로 동기화하는 순서를 안내합니다.
-          </p>
+          <h1>설정</h1>
         </div>
-        <aside class="status-card" aria-label="설정 상태">
-          <strong>설정 상태</strong>
-          <ul id="setupChecklist"></ul>
-        </aside>
       </header>
 
-      <section class="layout">
-        <article class="panel guide-panel">
-          <h2>전체 흐름</h2>
-          <ol class="flow-list">
-            <li>Notion에 <code>채용 공고</code> 데이터베이스를 하나 만듭니다.</li>
-            <li>처음에는 DB의 첫 번째 제목 칸을 <code>이름</code>으로 바꾸고, 날짜 칸 <code>일정일</code>, <code>시작일</code>, <code>마감일</code>을 추가합니다.</li>
-            <li>그 데이터베이스를 Notion Calendar에 추가합니다.</li>
-            <li>자소설 공고를 즐겨찾기하면 JD-Sync가 DB에 새 줄을 만듭니다.</li>
-            <li>Notion Calendar는 그 새 줄의 <code>일정일</code>을 캘린더에 보여줍니다.</li>
-          </ol>
+      <section class="setup-guide">
+        <a
+          class="guide-action"
+          href="https://sweltering-zucchini-fa4.notion.site/38169b4b1a31807ebb34f87abda89917?v=38a69b4b1a31806ca28f000cfa5d3974"
+          target="_blank"
+          rel="noreferrer"
+        >
+          설정 가이드 보러가기
+        </a>
+      </section>
 
-          <h2>1. Notion 토큰 발급</h2>
-          <ol class="steps">
-            <li>
-              <a href="https://www.notion.so/profile/integrations" target="_blank" rel="noreferrer">Notion Integrations</a>
-              페이지를 열고 새 internal integration을 만듭니다.
-            </li>
-            <li>연결할 Notion 워크스페이스를 선택하고 저장합니다.</li>
-            <li>Capabilities에서 content 읽기/삽입/수정 권한을 켭니다.</li>
-            <li>Secrets 또는 Configuration 화면에서 internal integration token을 복사합니다.</li>
-          </ol>
-
-          <h2>2. Notion DB 만들기</h2>
-          <p class="hint">
-            Notion Calendar에 토큰만 넣어서 외부 일정이 바로 등록되는 방식은 아닙니다. 날짜 속성이 있는 Notion DB를 Calendar에 연결하면,
-            그 DB 안의 각 줄이 일정처럼 보입니다. JD-Sync는 자소설 공고를 이 DB 안의 새 줄로 자동 추가합니다.
-          </p>
-          <ol class="steps">
-            <li>Notion에서 <code>채용 공고</code> 같은 데이터베이스를 하나 만듭니다. 일반 페이지 안에 만들어도 되고, 데이터베이스를 풀페이지로 만들어도 됩니다.</li>
-            <li>DB를 만들면 맨 왼쪽에 페이지 제목 칸이 하나 생깁니다. 그 칸 이름을 <code>이름</code>으로 바꿉니다.</li>
-            <li><code>일정일</code>이라는 날짜 칸을 하나 추가합니다. Notion Calendar에는 이 칸을 연결합니다.</li>
-            <li><code>시작일</code>과 <code>마감일</code>이라는 날짜 칸도 추가합니다. 이 두 칸은 DB에서 확인하는 보조 정보로 씁니다.</li>
-            <li>새 텍스트 칸을 만들어서 <code>이름</code>이라고 붙이면 안 됩니다. Notion API에서 말하는 <code>rich_text</code>가 바로 그 텍스트 칸입니다.</li>
-            <li>DB 우측 상단 메뉴에서 방금 만든 integration을 connection으로 추가합니다.</li>
-            <li>DB 설정에서 data source ID를 복사해 아래 Notion Data Source ID에 붙여넣습니다.</li>
-          </ol>
-
-          <h2>3. Notion Calendar에 보이게 하기</h2>
-          <ol class="steps">
-            <li>Notion Calendar를 열고 왼쪽 사이드바의 Notion 워크스페이스를 찾습니다.</li>
-            <li>워크스페이스 메뉴에서 Notion database 추가를 선택합니다.</li>
-            <li>방금 만든 채용 공고 DB를 선택하고 날짜 칸으로 <code>일정일</code>을 고릅니다.</li>
-          </ol>
-
-          <div class="note">
-            쉽게 말하면 JD-Sync는 기본값으로 <code>일정일</code>에 마감일만 넣습니다.
-            시작일도 함께 보기를 켜면 <code>일정일</code> 하나에 시작일~마감일 범위를 넣거나,
-            <code>[시작]</code> 일정 행을 따로 만들 수 있습니다.
-            <code>시작일</code>과 <code>마감일</code>은 항상 별도 칸에도 저장합니다.
-          </div>
-        </article>
-
-        <form id="settingsForm" class="panel settings-panel">
-          <h2>설정 입력</h2>
-          <div class="quick-start">
-            <strong>처음이면 이것만 입력하세요.</strong>
-            <ul>
-              <li>Notion 토큰</li>
-              <li>Notion Data Source ID</li>
-              <li>공고 제목을 넣을 칸: DB의 첫 번째 제목 칸 이름, 예: <code>이름</code> 또는 <code>액티비티</code></li>
-              <li>캘린더 표시일 칸 이름: <code>일정일</code> 또는 <code>날짜</code></li>
-              <li>마감일 칸 이름: <code>마감일</code></li>
-              <li>시작일 칸 이름: <code>시작일</code></li>
-            </ul>
-            <p>회사, URL 같은 추가 칸은 Notion DB에 직접 만든 경우에만 입력하면 됩니다.</p>
-          </div>
-
+      <form id="settingsForm" class="panel settings-panel">
+        <section class="section-block">
+          <h2>Notion 연결</h2>
           <label>
             Notion 토큰
-            <input id="notionToken" type="password" autocomplete="off" placeholder="ntn_... 또는 secret_..." />
+            <input id="notionToken" type="password" autocomplete="off" placeholder="ntn_..." />
           </label>
 
           <label>
             Notion Data Source ID
-            <input id="notionParentId" type="text" placeholder="DB 설정에서 복사한 data source ID" />
+            <input id="notionParentId" type="text" placeholder="Notion 데이터소스 ID" />
           </label>
-          <p class="hint">
-            새 Notion API에서는 database ID가 아니라 data source ID를 쓰는 게 가장 안전합니다. 이미 data source ID로 동기화가 됐다면 이 값이 맞습니다.
-          </p>
+        </section>
 
-          <details class="advanced-settings">
-            <summary>고급 설정</summary>
-            <div class="grid">
-              <label>
-                저장 위치 방식
-                <select id="notionParentType">
-                  <option value="data_source_id">data_source_id</option>
-                  <option value="database_id">database_id</option>
-                </select>
-              </label>
-              <label>
-                Notion API 버전
-                <input id="notionVersion" type="text" placeholder="2025-09-03" />
-              </label>
-            </div>
-            <p class="hint">대부분의 사용자는 <code>data_source_id</code>와 <code>2025-09-03</code>을 그대로 쓰면 됩니다.</p>
-          </details>
-
-          <h3>Notion DB 칸 이름</h3>
-          <p class="hint">
-            여기에는 Notion 데이터베이스에 실제로 만들어 둔 칸 이름을 적습니다. JD-Sync가 새 공고 줄을 만들 때
-            <code>공고 제목은 어느 칸에 넣을지</code>, <code>캘린더 표시 날짜와 시작일/마감일은 어느 칸에 넣을지</code>를 알려주는 설정입니다.
-            공고 제목 칸은 일반 텍스트 칸이 아니라 DB의 첫 번째 제목 칸이어야 합니다.
-          </p>
-          <div class="property-example">
-            직접 만든 템플릿 DB라면 첫 번째 제목 칸을 <code>이름</code>으로 바꾸고 <code>일정일</code>, <code>시작일</code>, <code>마감일</code> 날짜 칸을 추가하면 됩니다.
-            Notion Calendar 기본 DB를 쓰고 있다면
-            <code>액티비티</code> / <code>날짜</code>로 바꾸세요.
-          </div>
+        <section class="section-block">
+          <h2>Notion Database 설정</h2>
+          <p class="calendar-source-note">Notion Calendar는 <code>일정</code> 칸으로 연결하세요.</p>
           <div class="grid">
-            <label>공고 제목을 넣을 칸<input id="titleProperty" type="text" placeholder="이름" /></label>
-            <label>캘린더 표시 날짜를 넣을 칸<input id="dateProperty" type="text" placeholder="일정일" /></label>
-            <label>시작일을 넣을 칸<input id="startDateProperty" type="text" placeholder="시작일" /></label>
-            <label>마감일을 넣을 칸<input id="deadlineDateProperty" type="text" placeholder="마감일" /></label>
+            <label>
+              <span class="field-label">
+                공고명
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="공고명 설명"
+                  data-tooltip="Notion DB의 제목 칸입니다. 채용 공고 제목이 들어갑니다."
+                >?</span>
+              </span>
+              <input id="titleProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                회사명
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="회사명 설명"
+                  data-tooltip="채용 공고의 회사명을 저장하는 칸입니다."
+                >?</span>
+              </span>
+              <input id="companyProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                직무
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="직무 설명"
+                  data-tooltip="자소설에서 읽은 모집 직무 정보를 저장하는 칸입니다."
+                >?</span>
+              </span>
+              <input id="dutiesProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                시작일
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="시작일 설명"
+                  data-tooltip="공고 접수 시작일을 저장하는 날짜 칸입니다."
+                >?</span>
+              </span>
+              <input id="startDateProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                마감일
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="마감일 설명"
+                  data-tooltip="공고 접수 마감일을 저장하는 날짜 칸입니다."
+                >?</span>
+              </span>
+              <input id="deadlineDateProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                일정
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="일정 설명"
+                  data-tooltip="Notion Calendar에서 기준 날짜로 선택해야 하는 칸입니다. 시작일을 선택하면 캘린더가 시작일 기준으로 보입니다."
+                >?</span>
+              </span>
+              <input id="dateProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                공고 URL
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="공고 URL 설명"
+                  data-tooltip="자소설 공고 원문 링크를 저장하는 칸입니다."
+                >?</span>
+              </span>
+              <input id="urlProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                지원 URL
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="지원 URL 설명"
+                  data-tooltip="기업 지원 페이지 링크가 있을 때 저장하는 칸입니다."
+                >?</span>
+              </span>
+              <input id="applyUrlProperty" type="text" />
+            </label>
+            <label>
+              <span class="field-label">
+                공고 ID
+                <span
+                  class="help"
+                  tabindex="0"
+                  aria-label="공고 ID 설명"
+                  data-tooltip="자소설 공고 고유 ID입니다. 중복 등록 확인과 삭제 동기화에 사용합니다."
+                >?</span>
+              </span>
+              <input id="sourceIdProperty" type="text" />
+            </label>
           </div>
+        </section>
 
-          <h3>선택 정보 칸</h3>
-          <p class="hint">
-            Notion DB에 아래 칸을 직접 만들었을 때만 입력하세요. 비워두면 JD-Sync가 그 정보는 DB 칸에 따로 넣지 않습니다.
-            그래도 공고 본문에는 회사명과 링크를 같이 적어둡니다.
-          </p>
-          <div class="grid">
-            <label>회사명을 넣을 칸<input id="companyProperty" type="text" placeholder="예: 회사" /></label>
-            <label>공고명을 따로 넣을 칸<input id="recruitTitleProperty" type="text" placeholder="예: 공고명" /></label>
-            <label>공고 링크를 넣을 칸<input id="urlProperty" type="text" placeholder="예: 공고 URL" /></label>
-            <label>지원 링크를 넣을 칸<input id="applyUrlProperty" type="text" placeholder="예: 지원 URL" /></label>
-            <label>자소설 ID를 넣을 칸<input id="sourceIdProperty" type="text" placeholder="예: 자소설 ID" /></label>
-            <label>직무를 넣을 칸<input id="dutiesProperty" type="text" placeholder="예: 직무" /></label>
-          </div>
-
-          <h3>동기화 옵션</h3>
+        <section class="section-block">
+          <h2>동기화 옵션</h2>
           <label class="checkbox">
             <input id="autoSync" type="checkbox" />
             즐겨찾기 시 자동 동기화
           </label>
           <label class="checkbox">
-            <input id="preventDuplicates" type="checkbox" />
-            이미 동기화한 자소설 ID는 다시 만들지 않기
-          </label>
-          <label class="checkbox">
             <input id="includeStartDateInCalendar" type="checkbox" />
-            시작일도 캘린더에서 함께 보기
+            시작일도 캘린더에 추가하기
           </label>
           <fieldset id="startDateCalendarMode" class="mode-group" hidden>
             <legend>시작일 표시 방식</legend>
@@ -172,7 +171,7 @@
               <input type="radio" name="startDateCalendarMode" value="range" />
               <span>
                 <strong>하나로 합쳐서 만들기</strong>
-                <small><code>일정일</code>을 시작일~마감일 범위로 저장합니다. Notion 행은 하나만 생깁니다.</small>
+                <small><code>일정</code>을 시작일~마감일 범위로 저장합니다. Notion 행은 하나만 생깁니다.</small>
               </span>
             </label>
             <label class="radio-option">
@@ -183,34 +182,13 @@
               </span>
             </label>
           </fieldset>
-          <p class="hint">
-            꺼두면 <code>일정일</code>에는 마감일만 들어갑니다. 시작일을 함께 볼 때만 표시 방식을 고르면 됩니다.
-          </p>
-          <div class="actions">
-            <button id="saveButton" type="submit">설정 저장</button>
-            <button id="resetButton" type="button" class="secondary">기본값 복원</button>
-          </div>
-          <p id="settingsStatus" class="status-message" role="status"></p>
-        </form>
-      </section>
+        </section>
 
-      <section class="panel run-panel">
-        <div>
-          <h2>동작시키기</h2>
-          <p class="hint">
-            자소설 공고 상세 페이지에서 확장 아이콘을 누르면 이 가이드가 열리고, 아래 버튼으로 방금 선택한 공고를 수동 동기화할 수 있습니다.
-            자동 동기화가 켜져 있으면 즐겨찾기 성공 시 설정한 Notion DB에 새 줄이 생기고, 그 DB를 Notion Calendar에 연결해 둔 경우 캘린더에도 보입니다.
-          </p>
-          <p class="hint">
-            확장 프로그램을 업데이트하거나 <code>chrome://extensions</code>에서 새로고침했다면, 이미 열려 있던 자소설 탭도 한 번 새로고침한 뒤 동기화해 주세요.
-          </p>
-          <p id="sourceTabLabel" class="source-tab"></p>
+        <div class="actions">
+          <button id="saveButton" type="submit">설정 저장</button>
+          <button id="resetButton" type="button" class="secondary">기본값 복원</button>
         </div>
-        <div class="run-actions">
-          <button id="syncSourceButton" type="button">직전 자소설 탭 수동 동기화</button>
-          <a class="button-link secondary" href="https://jasoseol.com/recruit" target="_blank" rel="noreferrer">자소설 채용공고 열기</a>
-        </div>
-      </section>
+      </form>
 
       <section class="panel logs-panel">
         <div class="logs-header">
@@ -220,6 +198,8 @@
         <ol id="logList"></ol>
       </section>
     </main>
+
+    <div id="settingsToast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="guide.js"></script>
   </body>

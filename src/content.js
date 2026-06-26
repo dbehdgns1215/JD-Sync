@@ -230,7 +230,7 @@
       return;
     }
 
-    showToast("Notion Calendar용 DB에 공고를 추가했어요.", "success");
+    showToast(result.message || "Notion 일정 동기화를 완료했어요.", "success");
   }
 
   function showToast(message, tone) {

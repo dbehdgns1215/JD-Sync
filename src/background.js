@@ -271,7 +271,7 @@ async function syncRecruit(recruit, trigger) {
   };
   await chrome.storage.local.set({ syncedRecruitIds });
 
-  const successMessage = `${recruit.displayTitle || recruit.title} ${startPage ? "시작일 포함 동기화 완료" : "동기화 완료"}`;
+  const successMessage = `${recruit.displayTitle || recruit.title} ${startPage ? "시작일 포함 Notion 일정 동기화를 완료했어요." : "Notion 일정 동기화를 완료했어요."}`;
   await appendLog({
     level: "success",
     message: successMessage,

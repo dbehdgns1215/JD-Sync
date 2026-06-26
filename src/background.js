@@ -234,7 +234,8 @@ async function syncRecruit(recruit, trigger) {
   validateRecruit(recruit);
 
   const syncedRecruitIds = await getSyncedRecruitIds();
-  const existingSync = syncedRecruitIds[recruit.id] || null;
+  const syncKey = buildSyncKey(recruit, settings);
+  const existingSync = syncedRecruitIds[syncKey] || null;
   const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
   const shouldSyncSeparateStartDate = shouldCreateSeparateStartDatePage(recruit, settings);
   const startAlreadySynced = Boolean(existingSync && existingSync.startPageId);
@@ -252,8 +253,13 @@ async function syncRecruit(recruit, trigger) {
     ? await createNotionPage(buildNotionPayload(recruit, settings, "start"), settings)
     : null;
 
-  syncedRecruitIds[recruit.id] = {
+  syncedRecruitIds[syncKey] = {
     ...(existingSync || {}),
+    syncKey,
+    source: recruit.source || "jasoseol",
+    recruitId: String(recruit.id),
+    notionParentType: settings.notionParentType || DEFAULT_SETTINGS.notionParentType,
+    notionParentId: normalizeNotionId(settings.notionParentId),
     pageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.pageId || existingSync.deadlinePageId),
     deadlinePageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.deadlinePageId || existingSync.pageId),
     startPageId: startPage ? startPage.id : existingSync && existingSync.startPageId,
@@ -270,8 +276,8 @@ async function syncRecruit(recruit, trigger) {
     level: "success",
     message: successMessage,
     recruit,
-    notionPageId: deadlinePage ? deadlinePage.id : syncedRecruitIds[recruit.id].deadlinePageId,
-    startNotionPageId: startPage ? startPage.id : syncedRecruitIds[recruit.id].startPageId,
+    notionPageId: deadlinePage ? deadlinePage.id : syncedRecruitIds[syncKey].deadlinePageId,
+    startNotionPageId: startPage ? startPage.id : syncedRecruitIds[syncKey].startPageId,
     at: new Date().toISOString()
   });
 
@@ -281,8 +287,8 @@ async function syncRecruit(recruit, trigger) {
 
   return {
     ok: true,
-    pageId: syncedRecruitIds[recruit.id].deadlinePageId,
-    startPageId: syncedRecruitIds[recruit.id].startPageId || null
+    pageId: syncedRecruitIds[syncKey].deadlinePageId,
+    startPageId: syncedRecruitIds[syncKey].startPageId || null
   };
 }
 
@@ -310,6 +316,19 @@ async function getSettings() {
 async function getSyncedRecruitIds() {
   const local = await chrome.storage.local.get({ syncedRecruitIds: {} });
   return local.syncedRecruitIds || {};
+}
+
+function buildSyncKey(recruit, settings) {
+  return [
+    recruit.source || "jasoseol",
+    recruit.id,
+    settings.notionParentType || DEFAULT_SETTINGS.notionParentType,
+    normalizeNotionId(settings.notionParentId)
+  ].map(normalizeSyncKeyPart).join(":");
+}
+
+function normalizeSyncKeyPart(value) {
+  return encodeURIComponent(String(value || "").trim().toLowerCase());
 }
 
 function validateSettings(settings) {

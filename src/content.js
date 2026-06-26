@@ -6,11 +6,17 @@
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     if (!event.data || event.data.source !== PAGE_BRIDGE_SOURCE) return;
-    if (event.data.kind !== "favorite:add:success") return;
+    if (!["favorite:add:success", "favorite:remove:success"].includes(event.data.kind)) return;
 
-    const id = normalizeId(event.data.detail && event.data.detail.employmentCompanyId);
+    const id = normalizeId(event.data.detail && event.data.detail.employmentCompanyId) || extractIdFromUrl(location.href);
     if (!id) {
+      if (event.data.kind === "favorite:remove:success") return;
       showToast("자소설 공고 ID를 찾지 못했어요. 상세 페이지에서 수동 동기화를 시도해 주세요.", "warn");
+      return;
+    }
+
+    if (event.data.kind === "favorite:remove:success") {
+      unsyncRecruitById(id);
       return;
     }
 
@@ -44,10 +50,7 @@
   }
 
   async function syncRecruitById(id, trigger) {
-    const now = Date.now();
-    const last = recentSyncRequests.get(id) || 0;
-    if (now - last < SYNC_DEBOUNCE_MS) return;
-    recentSyncRequests.set(id, now);
+    if (!shouldHandleRequest(id, "sync")) return;
 
     try {
       const recruit = await getRecruitById(id);
@@ -60,6 +63,38 @@
     } catch (error) {
       showToast(`Notion 동기화 실패: ${error.message || error}`, "error");
     }
+  }
+
+  async function unsyncRecruitById(id) {
+    if (!shouldHandleRequest(id, "unsync")) return;
+
+    try {
+      const result = await sendRuntimeMessage({
+        type: "UNSYNC_RECRUIT",
+        recruit: {
+          id,
+          source: "jasoseol"
+        }
+      });
+
+      if (!result || !result.ok) {
+        showToast(`Notion 동기화 해제 실패: ${(result && result.error) || "알 수 없는 오류"}`, "error");
+        return;
+      }
+
+      showResultToast(result);
+    } catch (error) {
+      showToast(`Notion 동기화 해제 실패: ${error.message || error}`, "error");
+    }
+  }
+
+  function shouldHandleRequest(id, action) {
+    const key = `${action}:${id}`;
+    const now = Date.now();
+    const last = recentSyncRequests.get(key) || 0;
+    if (now - last < SYNC_DEBOUNCE_MS) return false;
+    recentSyncRequests.set(key, now);
+    return true;
   }
 
   async function getRecruitById(id) {
@@ -225,7 +260,13 @@
       return;
     }
 
+    if (result.removed) {
+      showToast(result.message || "Notion 일정 동기화를 해제했어요.", "success");
+      return;
+    }
+
     if (result.skipped) {
+      if (result.silent) return;
       showToast(result.message || "이미 Notion에 동기화된 공고예요.", "info");
       return;
     }

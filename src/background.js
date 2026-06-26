@@ -1,7 +1,6 @@
 const DEFAULT_SETTINGS = {
   autoSync: true,
   preventDuplicates: true,
-  enableNotifications: true,
   notionParentType: "data_source_id",
   notionParentId: "",
   notionVersion: "2025-09-03",
@@ -20,6 +19,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const LEGACY_SETTINGS = {
+  enableNotifications: false,
   includeStartDateInScheduleRange: false,
   syncStartDateToCalendar: false
 };
@@ -38,6 +38,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message.type === "SYNC_RECRUIT") {
     syncRecruit(message.recruit, message.trigger)
+      .then((result) => sendResponse(result))
+      .catch(async (error) => {
+        const result = { ok: false, error: toErrorMessage(error) };
+        await appendLog({ level: "error", message: result.error, recruit: message.recruit, at: new Date().toISOString() });
+        sendResponse(result);
+      });
+    return true;
+  }
+
+  if (message.type === "UNSYNC_RECRUIT") {
+    unsyncRecruit(message.recruit)
       .then((result) => sendResponse(result))
       .catch(async (error) => {
         const result = { ok: false, error: toErrorMessage(error) };
@@ -281,15 +292,75 @@ async function syncRecruit(recruit, trigger) {
     at: new Date().toISOString()
   });
 
-  if (settings.enableNotifications) {
-    notify(successMessage);
-  }
-
   return {
     ok: true,
+    message: successMessage,
     pageId: syncedRecruitIds[syncKey].deadlinePageId,
     startPageId: syncedRecruitIds[syncKey].startPageId || null
   };
+}
+
+async function unsyncRecruit(recruit) {
+  const settings = await getSettings();
+  const syncedRecruitIds = await getSyncedRecruitIds();
+  const { key, record } = findSyncedRecruitRecord(syncedRecruitIds, recruit, settings);
+
+  if (!record) {
+    return { ok: true, skipped: true, silent: true };
+  }
+
+  if (!settings.notionToken) throw new Error("Notion API 토큰이 설정되지 않았어요.");
+
+  const pageIds = uniqueValues([
+    record.deadlinePageId || record.pageId,
+    record.startPageId
+  ]);
+
+  if (!pageIds.length) {
+    delete syncedRecruitIds[key];
+    await chrome.storage.local.set({ syncedRecruitIds });
+    return { ok: true, skipped: true, silent: true };
+  }
+
+  const results = [];
+  let trashError = null;
+  try {
+    for (const pageId of pageIds) {
+      results.push(await trashNotionPage(pageId, settings));
+    }
+  } catch (error) {
+    trashError = error;
+  }
+
+  // 즐겨찾기 해제 이후에는 Notion 처리 결과와 무관하게 중복 잠금을 풀어야
+  // 같은 공고를 다시 즐겨찾기했을 때 재등록할 수 있습니다.
+  delete syncedRecruitIds[key];
+  await chrome.storage.local.set({ syncedRecruitIds });
+
+  if (trashError) {
+    throw new Error(`${toErrorMessage(trashError)} 로컬 동기화 기록은 해제했어요.`);
+  }
+
+  const removedCount = results.filter(Boolean).length;
+  if (!removedCount) {
+    return { ok: true, skipped: true, silent: true };
+  }
+
+  const message = `${record.title || "공고"} Notion 일정 동기화를 해제했어요.`;
+  await appendLog({
+    level: "success",
+    message,
+    recruit: {
+      id: recruit.id,
+      source: recruit.source || record.source || "jasoseol",
+      displayTitle: record.title || ""
+    },
+    notionPageId: record.deadlinePageId || record.pageId || "",
+    startNotionPageId: record.startPageId || "",
+    at: new Date().toISOString()
+  });
+
+  return { ok: true, removed: true, message };
 }
 
 async function getSettings() {
@@ -329,6 +400,20 @@ function buildSyncKey(recruit, settings) {
 
 function normalizeSyncKeyPart(value) {
   return encodeURIComponent(String(value || "").trim().toLowerCase());
+}
+
+function findSyncedRecruitRecord(syncedRecruitIds, recruit, settings) {
+  const syncKey = buildSyncKey(recruit, settings);
+  if (syncedRecruitIds[syncKey]) {
+    return { key: syncKey, record: syncedRecruitIds[syncKey] };
+  }
+
+  const legacyKey = String(recruit.id || "").trim();
+  if (legacyKey && syncedRecruitIds[legacyKey]) {
+    return { key: legacyKey, record: syncedRecruitIds[legacyKey] };
+  }
+
+  return { key: syncKey, record: null };
 }
 
 function validateSettings(settings) {
@@ -504,6 +589,43 @@ async function createNotionPage(payload, settings) {
   return body;
 }
 
+async function trashNotionPage(pageId, settings) {
+  const trashBodies = trashRequestBodies(settings);
+  let lastError = null;
+
+  for (const body of trashBodies) {
+    const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${settings.notionToken}`,
+        "Content-Type": "application/json",
+        "Notion-Version": settings.notionVersion || defaultNotionVersion(settings.notionParentType)
+      },
+      body: JSON.stringify(body)
+    });
+
+    const text = await response.text();
+    const responseBody = safeJson(text);
+
+    if (response.ok) return true;
+    if (response.status === 404) return false;
+
+    const rawMessage = responseBody && responseBody.message ? responseBody.message : text || response.statusText;
+    lastError = new Error(`Notion API 오류 (${response.status}): ${rawMessage}`);
+
+    if (response.status !== 400) break;
+  }
+
+  throw lastError || new Error("Notion 페이지를 휴지통으로 이동하지 못했어요.");
+}
+
+function trashRequestBodies(settings) {
+  const version = settings.notionVersion || defaultNotionVersion(settings.notionParentType);
+  const primary = version.startsWith("2022") ? { archived: true } : { in_trash: true };
+  const fallback = version.startsWith("2022") ? { in_trash: true } : { archived: true };
+  return [primary, fallback];
+}
+
 function explainNotionApiError(message, settings) {
   const text = String(message || "");
   const expectedTypeMatch = text.match(/^(.+?) is expected to be ([a-z_]+)/);
@@ -580,6 +702,10 @@ function trimForNotion(value, maxLength) {
   return text.length > maxLength ? text.slice(0, maxLength - 1) : text;
 }
 
+function uniqueValues(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
 function safeJson(text) {
   try {
     return JSON.parse(text);
@@ -596,17 +722,4 @@ async function appendLog(logEntry) {
   const local = await chrome.storage.local.get({ syncLogs: [] });
   const nextLogs = [logEntry, ...(local.syncLogs || [])].slice(0, 30);
   await chrome.storage.local.set({ syncLogs: nextLogs });
-}
-
-function notify(message) {
-  try {
-    chrome.notifications.create({
-      type: "basic",
-      iconUrl: chrome.runtime.getURL("assets/icons/icon128.png"),
-      title: "자소설 -> Notion",
-      message
-    });
-  } catch (_) {
-    // Notifications are helpful, but sync should not fail because of them.
-  }
 }

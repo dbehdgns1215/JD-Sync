@@ -1,7 +1,6 @@
 const DEFAULT_SETTINGS = {
   autoSync: true,
   preventDuplicates: true,
-  enableNotifications: true,
   notionParentType: "data_source_id",
   notionParentId: "",
   notionVersion: "2025-09-03",

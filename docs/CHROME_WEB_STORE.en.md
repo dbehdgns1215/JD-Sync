@@ -69,7 +69,6 @@ Suggested permission justifications:
 
 - `storage`: stores Notion settings and local sync history.
 - `activeTab`: lets the popup or guide sync the current Jasoseol posting page after the user clicks the extension.
-- `notifications`: notifies the user after successful sync.
 - `https://jasoseol.com/*`: detects bookmark actions and reads posting metadata.
 - `https://api.notion.com/*`: creates pages in the user's configured Notion database.
 

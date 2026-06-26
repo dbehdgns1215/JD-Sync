@@ -5,6 +5,7 @@
 
   const SOURCE = "jasoseol-notion-calendar-page-bridge";
   const FAVORITE_ADD_PATH = "/employment/add_user_employment.json";
+  const FAVORITE_REMOVE_PATH = "/employment/remove_user_employment.json";
 
   function toUrl(input) {
     try {
@@ -18,6 +19,16 @@
 
   function isFavoriteAdd(url) {
     return typeof url === "string" && url.includes(FAVORITE_ADD_PATH);
+  }
+
+  function isFavoriteRemove(url) {
+    return typeof url === "string" && url.includes(FAVORITE_REMOVE_PATH);
+  }
+
+  function favoriteEventKind(url) {
+    if (isFavoriteAdd(url)) return "favorite:add:success";
+    if (isFavoriteRemove(url)) return "favorite:remove:success";
+    return "";
   }
 
   function parseBody(body) {
@@ -98,10 +109,10 @@
     window.fetch = async function patchedFetch(input, init) {
       const requestUrl = toUrl(input);
       const requestBody = parseBody(init && init.body);
-      const shouldWatch = isFavoriteAdd(requestUrl);
+      const eventKind = favoriteEventKind(requestUrl);
       const response = await originalFetch.apply(this, arguments);
 
-      if (shouldWatch && response && response.ok) {
+      if (eventKind && response && response.ok) {
         response
           .clone()
           .text()
@@ -109,14 +120,14 @@
             const responseBody = parseJson(text);
             if (!responseLooksSuccessful(responseBody)) return;
 
-            emit("favorite:add:success", {
+            emit(eventKind, {
               employmentCompanyId: extractEmploymentCompanyId(requestBody, responseBody),
               requestUrl,
               responseBody
             });
           })
           .catch(() => {
-            emit("favorite:add:success", {
+            emit(eventKind, {
               employmentCompanyId: extractEmploymentCompanyId(requestBody, null),
               requestUrl
             });
@@ -140,8 +151,9 @@
     xhrProto.send = function patchedSend(body) {
       const meta = this.__jasoseolNotionCalendar || {};
       const requestBody = parseBody(body);
+      const eventKind = favoriteEventKind(meta.url);
 
-      if (isFavoriteAdd(meta.url)) {
+      if (eventKind) {
         this.addEventListener("loadend", () => {
           if (this.status < 200 || this.status >= 300) return;
 
@@ -154,7 +166,7 @@
 
           if (!responseLooksSuccessful(responseBody)) return;
 
-          emit("favorite:add:success", {
+          emit(eventKind, {
             employmentCompanyId: extractEmploymentCompanyId(requestBody, responseBody),
             requestUrl: meta.url,
             responseBody

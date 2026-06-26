@@ -4,16 +4,16 @@ const DEFAULT_SETTINGS = {
   notionParentType: "data_source_id",
   notionParentId: "",
   notionVersion: "2025-09-03",
-  titleProperty: "이름",
-  dateProperty: "일정일",
+  titleProperty: "공고명",
+  dateProperty: "일정",
   deadlineDateProperty: "마감일",
-  companyProperty: "",
+  companyProperty: "회사명",
   recruitTitleProperty: "",
-  urlProperty: "",
-  applyUrlProperty: "",
+  urlProperty: "공고 URL",
+  applyUrlProperty: "지원 URL",
   startDateProperty: "시작일",
-  sourceIdProperty: "",
-  dutiesProperty: "",
+  sourceIdProperty: "공고 ID",
+  dutiesProperty: "직무",
   includeStartDateInCalendar: false,
   startDateCalendarMode: "range"
 };
@@ -253,19 +253,16 @@ async function syncRecruit(recruit, trigger) {
   const existingSync = settings.preventDuplicates
     ? await refreshExistingSyncRecord(syncedRecruitIds[syncKey] || null, syncedRecruitIds, syncKey, settings, shouldSyncSeparateStartDate)
     : syncedRecruitIds[syncKey] || null;
-  const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
-  const startAlreadySynced = Boolean(existingSync && existingSync.startPageId);
+  const alreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId || existingSync.startPageId));
 
-  if (settings.preventDuplicates && deadlineAlreadySynced && (!shouldSyncSeparateStartDate || startAlreadySynced)) {
+  if (settings.preventDuplicates && alreadySynced) {
     const message = "이미 Notion에 동기화된 공고예요.";
     await appendLog({ level: "info", message, recruit, at: new Date().toISOString() });
     return { ok: true, skipped: true, message };
   }
 
-  const deadlinePage = settings.preventDuplicates && deadlineAlreadySynced
-    ? null
-    : await createNotionPage(buildNotionPayload(recruit, settings, "deadline"), settings);
-  const startPage = shouldSyncSeparateStartDate && (!settings.preventDuplicates || !startAlreadySynced)
+  const deadlinePage = await createNotionPage(buildNotionPayload(recruit, settings, "deadline"), settings);
+  const startPage = shouldSyncSeparateStartDate
     ? await createNotionPage(buildNotionPayload(recruit, settings, "start"), settings)
     : null;
 
@@ -276,11 +273,13 @@ async function syncRecruit(recruit, trigger) {
     recruitId: String(recruit.id),
     notionParentType: settings.notionParentType || DEFAULT_SETTINGS.notionParentType,
     notionParentId: normalizeNotionId(settings.notionParentId),
-    pageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.pageId || existingSync.deadlinePageId),
-    deadlinePageId: deadlinePage ? deadlinePage.id : existingSync && (existingSync.deadlinePageId || existingSync.pageId),
-    startPageId: startPage ? startPage.id : existingSync && existingSync.startPageId,
+    pageId: deadlinePage.id,
+    deadlinePageId: deadlinePage.id,
+    startPageId: startPage ? startPage.id : "",
     syncedAt: new Date().toISOString(),
     title: recruit.displayTitle || recruit.title,
+    startTime: recruit.startTime || "",
+    endTime: recruit.endTime || "",
     calendarDateProperty: settings.dateProperty,
     includeStartDateInCalendar: Boolean(settings.includeStartDateInCalendar),
     startDateCalendarMode: settings.startDateCalendarMode
@@ -292,7 +291,7 @@ async function syncRecruit(recruit, trigger) {
     level: "success",
     message: successMessage,
     recruit,
-    notionPageId: deadlinePage ? deadlinePage.id : savedSyncRecord.deadlinePageId,
+    notionPageId: savedSyncRecord.deadlinePageId,
     startNotionPageId: startPage ? startPage.id : savedSyncRecord.startPageId,
     at: new Date().toISOString()
   });
@@ -487,28 +486,21 @@ function validateSettings(settings) {
 
 function validateRecruit(recruit) {
   if (!recruit || !recruit.id) throw new Error("공고 ID가 없어요.");
-  if (!recruit.endTime && !recruit.startTime) {
-    throw new Error("공고 시작일/마감일을 찾지 못했어요.");
+  if (!recruit.endTime) {
+    throw new Error("공고 마감일을 찾지 못했어요.");
   }
 }
 
 function buildNotionPayload(recruit, settings, calendarEntryType) {
   const properties = {};
   const isStartEntry = calendarEntryType === "start";
-  const useScheduleRange =
-    settings.includeStartDateInCalendar &&
-    settings.startDateCalendarMode === "range" &&
-    recruit.startTime &&
-    recruit.endTime &&
-    normalizeDate(recruit.startTime) !== normalizeDate(recruit.endTime);
-  const calendarStart = isStartEntry ? recruit.startTime : useScheduleRange ? recruit.startTime : recruit.endTime || recruit.startTime;
-  const calendarEnd = useScheduleRange ? recruit.endTime : "";
+  const calendarDate = calendarDateForEntry(recruit, settings, calendarEntryType);
   const title = isStartEntry
     ? `[시작] ${recruit.displayTitle || recruit.title || "자소설 채용 공고"}`
     : recruit.displayTitle || recruit.title || "자소설 채용 공고";
 
   properties[settings.titleProperty] = titleValue(title);
-  properties[settings.dateProperty] = dateRangeValue(calendarStart, calendarEnd);
+  properties[settings.dateProperty] = dateRangeValue(calendarDate.start, calendarDate.end);
 
   addDate(properties, settings.deadlineDateProperty, recruit.endTime);
   addRichText(properties, settings.companyProperty, recruit.companyName);
@@ -524,6 +516,23 @@ function buildNotionPayload(recruit, settings, calendarEntryType) {
     properties,
     children: buildChildren(recruit)
   };
+}
+
+function calendarDateForEntry(recruit, settings, calendarEntryType) {
+  if (calendarEntryType === "start") {
+    return { start: recruit.startTime, end: "" };
+  }
+
+  if (
+    settings.includeStartDateInCalendar &&
+    settings.startDateCalendarMode === "range" &&
+    recruit.startTime &&
+    normalizeDate(recruit.startTime) !== normalizeDate(recruit.endTime)
+  ) {
+    return { start: recruit.startTime, end: recruit.endTime };
+  }
+
+  return { start: recruit.endTime, end: "" };
 }
 
 function shouldCreateSeparateStartDatePage(recruit, settings) {

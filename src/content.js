@@ -1,6 +1,7 @@
 (() => {
   const PAGE_BRIDGE_SOURCE = "jasoseol-notion-calendar-page-bridge";
   const SYNC_DEBOUNCE_MS = 800;
+  const EXTENSION_REFRESH_MESSAGE = "확장 프로그램이 업데이트됐습니다. 이 페이지를 새로고침해 주세요.";
   const recentSyncRequests = new Map();
 
   window.addEventListener("message", (event) => {
@@ -121,7 +122,7 @@
   }
 
   function hasEnoughRecruitData(recruit) {
-    return Boolean(recruit.companyName && recruit.title && (recruit.endTime || recruit.startTime));
+    return Boolean(recruit.companyName && recruit.title && recruit.endTime);
   }
 
   function parseRecruitFromDocument(doc, pageUrl) {
@@ -239,19 +240,38 @@
   function sendRuntimeMessage(message) {
     return new Promise((resolve, reject) => {
       if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
-        reject(new Error("확장 프로그램이 업데이트되었거나 새로고침되었어요. 자소설 페이지를 새로고침한 뒤 다시 시도해 주세요."));
+        reject(new Error(EXTENSION_REFRESH_MESSAGE));
         return;
       }
 
-      chrome.runtime.sendMessage(message, (response) => {
-        const error = chrome.runtime.lastError;
-        if (error) {
-          reject(new Error(error.message));
-          return;
-        }
-        resolve(response);
-      });
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          const error = chrome.runtime.lastError;
+          if (error) {
+            reject(new Error(readableRuntimeError(error)));
+            return;
+          }
+          resolve(response);
+        });
+      } catch (error) {
+        reject(new Error(readableRuntimeError(error)));
+      }
     });
+  }
+
+  function readableRuntimeError(error) {
+    const message = String(error && error.message ? error.message : error || "");
+
+    if (
+      !message ||
+      /extension context invalidated/i.test(message) ||
+      /context invalidated/i.test(message) ||
+      /receiving end does not exist/i.test(message)
+    ) {
+      return EXTENSION_REFRESH_MESSAGE;
+    }
+
+    return message;
   }
 
   function showResultToast(result) {

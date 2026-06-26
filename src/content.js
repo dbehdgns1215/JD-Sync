@@ -1,6 +1,6 @@
 (() => {
   const PAGE_BRIDGE_SOURCE = "jasoseol-notion-calendar-page-bridge";
-  const SYNC_DEBOUNCE_MS = 8000;
+  const SYNC_DEBOUNCE_MS = 800;
   const recentSyncRequests = new Map();
 
   window.addEventListener("message", (event) => {
@@ -275,17 +275,11 @@
   }
 
   function showToast(message, tone) {
-    const existing = document.querySelector(".jasoseol-notion-calendar-toast");
-    if (existing) existing.remove();
-
+    const container = getToastContainer();
     const toast = document.createElement("div");
     toast.className = `jasoseol-notion-calendar-toast jasoseol-notion-calendar-toast-${tone || "info"}`;
     toast.textContent = message;
     Object.assign(toast.style, {
-      position: "fixed",
-      right: "20px",
-      bottom: "20px",
-      zIndex: "2147483647",
       maxWidth: "360px",
       padding: "12px 14px",
       borderRadius: "8px",
@@ -304,7 +298,32 @@
               : "#334155"
     });
 
-    document.documentElement.appendChild(toast);
-    window.setTimeout(() => toast.remove(), 3800);
+    container.appendChild(toast);
+
+    window.setTimeout(() => {
+      toast.remove();
+      if (!container.children.length) container.remove();
+    }, 5200);
+  }
+
+  function getToastContainer() {
+    const existing = document.querySelector(".jasoseol-notion-calendar-toast-container");
+    if (existing) return existing;
+
+    const container = document.createElement("div");
+    container.className = "jasoseol-notion-calendar-toast-container";
+    Object.assign(container.style, {
+      position: "fixed",
+      right: "20px",
+      bottom: "20px",
+      zIndex: "2147483647",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+      gap: "8px",
+      pointerEvents: "none"
+    });
+    document.documentElement.appendChild(container);
+    return container;
   }
 })();

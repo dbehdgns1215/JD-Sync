@@ -63,6 +63,23 @@
     return {};
   }
 
+  async function parseFetchBody(input, init) {
+    if (init && init.body) return parseBody(init.body);
+
+    try {
+      if (input && typeof input.clone === "function") {
+        const clone = input.clone();
+        if (typeof clone.text === "function") {
+          return parseBody(await clone.text());
+        }
+      }
+    } catch (_) {
+      return {};
+    }
+
+    return {};
+  }
+
   function parseJson(text) {
     if (!text || typeof text !== "string") return null;
     try {
@@ -108,11 +125,12 @@
   if (typeof originalFetch === "function") {
     window.fetch = async function patchedFetch(input, init) {
       const requestUrl = toUrl(input);
-      const requestBody = parseBody(init && init.body);
       const eventKind = favoriteEventKind(requestUrl);
+      const requestBodyPromise = eventKind ? parseFetchBody(input, init) : Promise.resolve({});
       const response = await originalFetch.apply(this, arguments);
 
       if (eventKind && response && response.ok) {
+        const requestBody = await requestBodyPromise;
         response
           .clone()
           .text()

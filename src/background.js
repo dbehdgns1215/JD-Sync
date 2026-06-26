@@ -26,6 +26,9 @@ const LEGACY_SETTINGS = {
 
 const GUIDE_PATH = "src/guide.html";
 const LAST_SOURCE_TAB_KEY = "lastSourceTab";
+const NOTION_RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+const NOTION_MAX_ATTEMPTS = 3;
+let syncedRecruitStorageQueue = Promise.resolve();
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
@@ -246,9 +249,11 @@ async function syncRecruit(recruit, trigger) {
 
   const syncedRecruitIds = await getSyncedRecruitIds();
   const syncKey = buildSyncKey(recruit, settings);
-  const existingSync = syncedRecruitIds[syncKey] || null;
-  const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
   const shouldSyncSeparateStartDate = shouldCreateSeparateStartDatePage(recruit, settings);
+  const existingSync = settings.preventDuplicates
+    ? await refreshExistingSyncRecord(syncedRecruitIds[syncKey] || null, syncedRecruitIds, syncKey, settings, shouldSyncSeparateStartDate)
+    : syncedRecruitIds[syncKey] || null;
+  const deadlineAlreadySynced = Boolean(existingSync && (existingSync.deadlinePageId || existingSync.pageId));
   const startAlreadySynced = Boolean(existingSync && existingSync.startPageId);
 
   if (settings.preventDuplicates && deadlineAlreadySynced && (!shouldSyncSeparateStartDate || startAlreadySynced)) {
@@ -264,7 +269,7 @@ async function syncRecruit(recruit, trigger) {
     ? await createNotionPage(buildNotionPayload(recruit, settings, "start"), settings)
     : null;
 
-  syncedRecruitIds[syncKey] = {
+  const nextSyncRecord = {
     ...(existingSync || {}),
     syncKey,
     source: recruit.source || "jasoseol",
@@ -280,23 +285,23 @@ async function syncRecruit(recruit, trigger) {
     includeStartDateInCalendar: Boolean(settings.includeStartDateInCalendar),
     startDateCalendarMode: settings.startDateCalendarMode
   };
-  await chrome.storage.local.set({ syncedRecruitIds });
+  const savedSyncRecord = await upsertSyncedRecruitRecord(syncKey, nextSyncRecord);
 
   const successMessage = `${recruit.displayTitle || recruit.title} ${startPage ? "시작일 포함 Notion 일정 동기화를 완료했어요." : "Notion 일정 동기화를 완료했어요."}`;
   await appendLog({
     level: "success",
     message: successMessage,
     recruit,
-    notionPageId: deadlinePage ? deadlinePage.id : syncedRecruitIds[syncKey].deadlinePageId,
-    startNotionPageId: startPage ? startPage.id : syncedRecruitIds[syncKey].startPageId,
+    notionPageId: deadlinePage ? deadlinePage.id : savedSyncRecord.deadlinePageId,
+    startNotionPageId: startPage ? startPage.id : savedSyncRecord.startPageId,
     at: new Date().toISOString()
   });
 
   return {
     ok: true,
     message: successMessage,
-    pageId: syncedRecruitIds[syncKey].deadlinePageId,
-    startPageId: syncedRecruitIds[syncKey].startPageId || null
+    pageId: savedSyncRecord.deadlinePageId,
+    startPageId: savedSyncRecord.startPageId || null
   };
 }
 
@@ -317,8 +322,7 @@ async function unsyncRecruit(recruit) {
   ]);
 
   if (!pageIds.length) {
-    delete syncedRecruitIds[key];
-    await chrome.storage.local.set({ syncedRecruitIds });
+    await deleteSyncedRecruitRecord(key);
     return { ok: true, skipped: true, silent: true };
   }
 
@@ -334,8 +338,7 @@ async function unsyncRecruit(recruit) {
 
   // 즐겨찾기 해제 이후에는 Notion 처리 결과와 무관하게 중복 잠금을 풀어야
   // 같은 공고를 다시 즐겨찾기했을 때 재등록할 수 있습니다.
-  delete syncedRecruitIds[key];
-  await chrome.storage.local.set({ syncedRecruitIds });
+  await deleteSyncedRecruitRecord(key);
 
   if (trashError) {
     throw new Error(`${toErrorMessage(trashError)} 로컬 동기화 기록은 해제했어요.`);
@@ -363,6 +366,39 @@ async function unsyncRecruit(recruit) {
   return { ok: true, removed: true, message };
 }
 
+async function refreshExistingSyncRecord(record, syncedRecruitIds, syncKey, settings, shouldSyncSeparateStartDate) {
+  if (!record) return null;
+
+  const nextRecord = { ...record };
+  let changed = false;
+
+  const deadlinePageId = nextRecord.deadlinePageId || nextRecord.pageId || "";
+  if (deadlinePageId && !(await isNotionPageActive(deadlinePageId, settings))) {
+    delete nextRecord.pageId;
+    delete nextRecord.deadlinePageId;
+    changed = true;
+  }
+
+  if (shouldSyncSeparateStartDate && nextRecord.startPageId && !(await isNotionPageActive(nextRecord.startPageId, settings))) {
+    delete nextRecord.startPageId;
+    changed = true;
+  }
+
+  const hasDeadlinePage = Boolean(nextRecord.deadlinePageId || nextRecord.pageId);
+  const hasStartPage = Boolean(nextRecord.startPageId);
+
+  if (!hasDeadlinePage && !hasStartPage) {
+    await deleteSyncedRecruitRecord(syncKey);
+    return null;
+  }
+
+  if (changed) {
+    await upsertSyncedRecruitRecord(syncKey, nextRecord);
+  }
+
+  return nextRecord;
+}
+
 async function getSettings() {
   const syncSettings = await chrome.storage.sync.get({ ...DEFAULT_SETTINGS, ...LEGACY_SETTINGS });
   const localSettings = await chrome.storage.local.get({ notionToken: "" });
@@ -387,6 +423,32 @@ async function getSettings() {
 async function getSyncedRecruitIds() {
   const local = await chrome.storage.local.get({ syncedRecruitIds: {} });
   return local.syncedRecruitIds || {};
+}
+
+async function upsertSyncedRecruitRecord(syncKey, record) {
+  return await updateSyncedRecruitIds((latestSyncedRecruitIds) => {
+    latestSyncedRecruitIds[syncKey] = record;
+    return latestSyncedRecruitIds[syncKey];
+  });
+}
+
+async function deleteSyncedRecruitRecord(syncKey) {
+  await updateSyncedRecruitIds((latestSyncedRecruitIds) => {
+    delete latestSyncedRecruitIds[syncKey];
+    return null;
+  });
+}
+
+async function updateSyncedRecruitIds(mutator) {
+  const operation = syncedRecruitStorageQueue.then(async () => {
+    const latestSyncedRecruitIds = await getSyncedRecruitIds();
+    const result = mutator(latestSyncedRecruitIds);
+    await chrome.storage.local.set({ syncedRecruitIds: latestSyncedRecruitIds });
+    return result;
+  });
+
+  syncedRecruitStorageQueue = operation.catch(() => {});
+  return await operation;
 }
 
 function buildSyncKey(recruit, settings) {
@@ -567,7 +629,7 @@ function buildChildren(recruit) {
 }
 
 async function createNotionPage(payload, settings) {
-  const response = await fetch("https://api.notion.com/v1/pages", {
+  const response = await fetchNotion("https://api.notion.com/v1/pages", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${settings.notionToken}`,
@@ -589,12 +651,56 @@ async function createNotionPage(payload, settings) {
   return body;
 }
 
+async function fetchNotion(url, options) {
+  let response = null;
+
+  for (let attempt = 1; attempt <= NOTION_MAX_ATTEMPTS; attempt += 1) {
+    response = await fetch(url, options);
+    if (!NOTION_RETRY_STATUSES.has(response.status) || attempt === NOTION_MAX_ATTEMPTS) {
+      return response;
+    }
+
+    await wait(retryDelayMs(response, attempt));
+  }
+
+  return response;
+}
+
+async function isNotionPageActive(pageId, settings) {
+  try {
+    const page = await retrieveNotionPage(pageId, settings);
+    if (!page) return false;
+    return !page.archived && !page.in_trash;
+  } catch (_) {
+    return true;
+  }
+}
+
+async function retrieveNotionPage(pageId, settings) {
+  const response = await fetchNotion(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${settings.notionToken}`,
+      "Notion-Version": settings.notionVersion || defaultNotionVersion(settings.notionParentType)
+    }
+  });
+
+  const text = await response.text();
+  const body = safeJson(text);
+
+  if (response.ok) return body;
+  if (response.status === 404) return null;
+
+  const rawMessage = body && body.message ? body.message : text || response.statusText;
+  throw new Error(`Notion API 오류 (${response.status}): ${rawMessage}`);
+}
+
 async function trashNotionPage(pageId, settings) {
   const trashBodies = trashRequestBodies(settings);
   let lastError = null;
 
   for (const body of trashBodies) {
-    const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    const response = await fetchNotion(`https://api.notion.com/v1/pages/${pageId}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${settings.notionToken}`,
@@ -704,6 +810,19 @@ function trimForNotion(value, maxLength) {
 
 function uniqueValues(values) {
   return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function retryDelayMs(response, attempt) {
+  const retryAfter = Number(response.headers && response.headers.get("Retry-After"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return retryAfter * 1000;
+  }
+
+  return 350 * attempt;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function safeJson(text) {
